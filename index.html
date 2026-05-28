@@ -464,15 +464,26 @@ const GC=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f97316',
 // ET = UTC-4 in summer (EDT). All stored times are EDT.
 function etToUtcMs(s){const[d,t]=s.split(' ');const[Y,M,D]=d.split('-').map(Number);const[h,m]=t.split(':').map(Number);return Date.UTC(Y,M-1,D,h+4,m);}
 
-// Generic UTC-ms to display strings in any IANA timezone
+// Rock-solid UTC-ms → display strings in any IANA timezone
+// Uses Intl.DateTimeFormat parts — no locale-dependent string parsing
 function utcMsToTZ(ms,tz){
   const d=new Date(ms);
-  const disp=d.toLocaleTimeString('en-SG',{timeZone:tz,hour:'numeric',minute:'2-digit',hour12:true});
-  const dateStr=d.toLocaleDateString('en-SG',{timeZone:tz,weekday:'short',month:'short',day:'numeric'});
-  let dayKey;
-  try{dayKey=new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(d);}
-  catch(e){dayKey=d.toISOString().slice(0,10);}
-  return{display:disp,date:dateStr,dayKey};
+  // Get individual date/time parts in the target timezone
+  const fmt=(opts)=>new Intl.DateTimeFormat('en-US',{timeZone:tz,...opts});
+  const parts=fmt({year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:true}).formatToParts(d);
+  const get=(t)=>(parts.find(p=>p.type===t)||{value:''}).value;
+  const yr=get('year'),mo=get('month'),dy=get('day');
+  const hr=get('hour'),mn=get('minute'),ampm=get('dayPeriod')||get('hour12');
+  // dayKey as YYYY-MM-DD for reliable sorting
+  const dayKey=`${yr}-${mo}-${dy}`;
+  // Friendly date label
+  const weekday=fmt({weekday:'short'}).format(d);
+  const monthName=fmt({month:'short'}).format(d);
+  const dayNum=fmt({day:'numeric'}).format(d);
+  const dateStr=`${weekday}, ${monthName} ${dayNum}`;
+  // Time display
+  const display=fmt({hour:'numeric',minute:'2-digit',hour12:true}).format(d);
+  return{display,date:dateStr,dayKey};
 }
 
 // Keep backward compat alias
@@ -809,21 +820,30 @@ function renderPredictions(){
 
   // Group by day
   const byDay={};
-  filtered.forEach(m=>{if(!byDay[m.sgt.dayKey])byDay[m.sgt.dayKey]={label:m.sgt.date,matches:[]};byDay[m.sgt.dayKey].matches.push(m);});
+  filtered.forEach(m=>{
+    const dk=m.sgt&&m.sgt.dayKey?m.sgt.dayKey:'unknown';
+    if(!byDay[dk])byDay[dk]={label:m.sgt?m.sgt.date:'Unknown date',matches:[]};
+    byDay[dk].matches.push(m);
+  });
 
   const container=document.getElementById('predictions-list');
   if(!container) return;
-  if(!filtered.length){
-    const msg=fixFilter==='open'?'All upcoming matches are locked or already predicted':'No matches found';
+
+  const dayKeys=Object.keys(byDay).sort();
+  if(!filtered.length||!dayKeys.length){
+    const msg=fixFilter==='open'?'All upcoming matches are locked or already predicted':'No matches to show';
     container.innerHTML=`<div style="color:var(--mu);text-align:center;padding:40px;font-size:14px">${msg}</div>`;
     return;
   }
 
   let html='';
-  Object.keys(byDay).sort().forEach(dk=>{
+  dayKeys.forEach(dk=>{
     const{label,matches}=byDay[dk];
     html+=`<div class="day-block"><div class="day-hdr">${label}<span class="day-cnt">${matches.length}</span></div>`;
-    matches.forEach(m=>{html+=m.type==='group'?renderGroupPredRow(m,myPreds):renderKOPredRow(m,myPreds);});
+    matches.forEach(m=>{
+      try{html+=m.type==='group'?renderGroupPredRow(m,myPreds):renderKOPredRow(m,myPreds);}
+      catch(e){html+=`<div style="color:var(--ac3);font-size:11px;padding:6px">Error rendering match: ${e.message}</div>`;}
+    });
     html+='</div>';
   });
   container.innerHTML=html;
