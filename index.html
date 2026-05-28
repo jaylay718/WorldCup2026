@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WC 2026 · Prediction Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0e1a;--s:#111827;--s2:#1a2235;--b:#1e2d45;--ac:#00d4aa;--ac2:#f59e0b;--ac3:#ef4444;--tx:#e2e8f0;--mu:#64748b;--win:#10b981}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:'Barlow',sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% 0%,rgba(0,212,170,.06),transparent 60%),radial-gradient(ellipse 60% 40% at 80% 100%,rgba(245,158,11,.05),transparent 50%);pointer-events:none;z-index:0}
+
+/* ── OVERLAY / MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.overlay.hide{display:none}
+.modal{background:var(--s);border:1px solid var(--b);border-radius:16px;padding:28px;width:100%;max-width:420px;position:relative}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;letter-spacing:.5px;color:#fff;margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--mu);margin-bottom:20px}
+.field-label{font-size:12px;font-weight:600;color:var(--mu);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.field-input{width:100%;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:10px 14px;color:var(--tx);font-size:14px;font-family:'Barlow',sans-serif;outline:none;margin-bottom:14px}
+.field-input:focus{border-color:rgba(0,212,170,.5)}
+.btn-primary{width:100%;padding:11px;border-radius:8px;border:none;background:var(--ac);color:#000;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:all .2s}
+.btn-primary:hover{background:#00bfa8}
+.btn-secondary{width:100%;padding:10px;border-radius:8px;border:1px solid var(--b);background:transparent;color:var(--mu);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:8px}
+.btn-secondary:hover{border-color:var(--ac);color:var(--ac)}
+.btn-danger{background:transparent;border:1px solid var(--ac3);color:var(--ac3);padding:7px 14px;border-radius:7px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-danger:hover{background:var(--ac3);color:#fff}
+.err-msg{color:var(--ac3);font-size:12px;margin-top:-10px;margin-bottom:10px}
+.user-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:220px;overflow-y:auto}
+.user-chip{display:flex;align-items:center;justify-content:space-between;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:8px 12px;font-size:13px}
+.user-chip .uname{font-weight:600}
+.user-chip .udel{background:transparent;border:none;color:var(--mu);cursor:pointer;font-size:16px;transition:color .15s}
+.user-chip .udel:hover{color:var(--ac3)}
+.divider{height:1px;background:var(--b);margin:14px 0}
+
+/* ── HEADER ── */
+header{position:sticky;top:0;z-index:100;background:rgba(10,14,26,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--b);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;gap:10px}
+.logo{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:#fff;white-space:nowrap}
+.logo span{color:var(--ac)}
+.tabs{display:flex;gap:3px;background:var(--s);border-radius:8px;padding:3px}
+.tab{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;transition:all .2s;color:var(--mu);background:transparent;white-space:nowrap}
+.tab.active{background:var(--ac);color:#000}
+.tab:hover:not(.active){color:var(--tx);background:var(--b)}
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.user-badge{display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--b);border-radius:20px;padding:4px 12px 4px 8px;font-size:12px;font-weight:600;cursor:pointer;transition:border-color .15s}
+.user-badge:hover{border-color:var(--ac)}
+.user-avatar{width:24px;height:24px;border-radius:50%;background:var(--ac);color:#000;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;flex-shrink:0}
+.admin-badge{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:var(--ac2);font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.tz-picker{position:relative}
+.tz-trigger{background:var(--s2);border:1px solid var(--b);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--tx);cursor:pointer;transition:border-color .15s;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.tz-trigger:hover{border-color:var(--ac);color:var(--ac)}
+.tz-backdrop{display:none;position:fixed;inset:0;z-index:299}
+.tz-backdrop.open{display:block}
+.tz-dropdown{display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--s);border:1px solid var(--b);border-radius:12px;padding:10px 0;z-index:300;min-width:290px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.tz-dropdown.open{display:block}
+.tz-dropdown-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--mu);text-transform:uppercase;padding:0 14px 8px;border-bottom:1px solid var(--b);margin-bottom:4px}
+.tz-list{max-height:260px;overflow-y:auto;padding:4px 0}
+.tz-item{display:flex;align-items:center;gap:8px;padding:7px 14px;font-size:13px;cursor:pointer;transition:background .12s;white-space:nowrap}
+.tz-item:hover{background:rgba(255,255,255,.06)}
+.tz-item.selected{background:rgba(0,212,170,.12);color:var(--ac);font-weight:600}
+.tz-item.selected::after{content:"✓";margin-left:auto;font-size:12px;color:var(--ac)}
+
+/* ── MAIN ── */
+main{position:relative;z-index:1}
+.view{display:none;padding:20px}
+.view.active{display:block}
+
+/* ── PREDICTION FIXTURES ── */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.flt-btn{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;border:1px solid var(--b);background:transparent;color:var(--mu);cursor:pointer;transition:all .2s}
+.flt-btn.active{border-color:var(--ac);color:var(--ac);background:rgba(0,212,170,.1)}
+.srch{flex:1;min-width:140px;background:var(--s);border:1px solid var(--b);border-radius:8px;padding:6px 12px;color:var(--tx);font-size:13px;font-family:'Barlow',sans-serif;outline:none}
+.srch:focus{border-color:rgba(0,212,170,.4)}
+
+.day-block{margin-bottom:20px}
+.day-hdr{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;letter-spacing:1px;color:var(--mu);text-transform:uppercase;padding:5px 0;border-bottom:1px solid var(--b);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.day-cnt{font-size:10px;background:var(--s2);border:1px solid var(--b);border-radius:10px;padding:2px 8px;color:var(--mu);font-weight:600}
+
+.match-card{background:var(--s);border:1px solid var(--b);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:border-color .15s}
+.match-card:hover{border-color:rgba(255,255,255,.1)}
+.match-card.locked{border-left:3px solid var(--ac3)!important}
+.match-card.predicted{border-left:3px solid var(--win)}
+.match-card.scored-correct{border-left:3px solid #fbbf24}
+.match-card-inner{display:grid;grid-template-columns:80px 1fr 190px 1fr 100px;align-items:center;gap:8px;padding:8px 12px}
+.m-time{text-align:center}
+.m-time .t{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#fff;line-height:1}
+.m-time .s{font-size:10px;color:var(--mu);margin-top:2px;white-space:nowrap}
+.m-time .g{font-size:10px;font-weight:700;margin-top:2px}
+.m-team{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;min-width:0}
+.m-team.l{justify-content:flex-end;text-align:right}
+.m-team.r{justify-content:flex-start;text-align:left}
+.m-team .fl{font-size:18px;flex-shrink:0}
+.m-team .tn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.m-team.w{color:#fff;font-weight:700}
+.m-team.lo{opacity:.35}
+.m-team.tbd{color:var(--mu);font-style:italic}
+
+/* Prediction input area */
+.pred-area{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:185px}
+.pred-score-row{display:flex;align-items:center;gap:5px}
+.pred-box{display:flex;align-items:center;gap:4px;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:3px 8px}
+.pred-box.is-draw{border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.05)}
+.pred-input{width:30px;background:transparent;border:none;color:var(--ac);font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;text-align:center;outline:none;padding:0}
+.pred-input::-webkit-inner-spin-button,.pred-input::-webkit-outer-spin-button{-webkit-appearance:none}
+.pred-input.ko-inp{color:var(--ac2)}
+.pred-sep{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--mu)}
+.pred-clear{background:transparent;border:none;color:var(--mu);cursor:pointer;font-size:12px;padding:1px 3px;border-radius:3px;transition:color .15s}
+.pred-clear:hover{color:var(--ac3)}
+.draw-prompt{font-size:10px;font-weight:700;color:var(--ac2);background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:4px;padding:2px 6px;letter-spacing:.3px;white-space:nowrap}
+.et-btns{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.et-btn{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;border:1px solid var(--b);background:transparent;color:var(--mu);cursor:pointer;transition:all .15s;white-space:nowrap}
+.et-btn:hover{border-color:var(--ac);color:var(--ac)}
+.et-btn.chosen{border-color:var(--win);background:rgba(16,185,129,.15);color:#fff}
+.submit-btn{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;border:none;background:var(--ac);color:#000;cursor:pointer;transition:all .2s;letter-spacing:.3px}
+.submit-btn:hover{background:#00bfa8}
+.submitted-badge{font-size:11px;color:var(--win);font-weight:600;text-align:center;display:flex;align-items:center;gap:3px}
+.locked-badge{font-size:11px;color:var(--ac3);font-weight:700;text-align:center;letter-spacing:.5px}
+.result-feedback{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap}
+.result-feedback.exact{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3)}
+.result-feedback.correct{background:rgba(16,185,129,.15);color:var(--win);border:1px solid rgba(16,185,129,.3)}
+.result-feedback.wrong{background:rgba(239,68,68,.1);color:var(--ac3);border:1px solid rgba(239,68,68,.2)}
+
+.m-venue{font-size:10px;color:var(--mu);text-align:right;line-height:1.4}
+.lock-info{font-size:10px;color:var(--ac3);margin-top:2px;text-align:center}
+
+/* ── LEADERBOARD ── */
+.lb-table{width:100%;border-collapse:collapse}
+.lb-table th{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--mu);text-align:center;padding:8px 10px;border-bottom:1px solid var(--b);white-space:nowrap}
+.lb-table th.l{text-align:left}
+.lb-table td{padding:9px 10px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04);text-align:center}
+.lb-table td.l{text-align:left}
+.lb-table tr:hover td{background:rgba(255,255,255,.03)}
+.lb-rank{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:var(--mu)}
+.lb-rank.gold{color:#fbbf24}
+.lb-rank.silver{color:#94a3b8}
+.lb-rank.bronze{color:#a16207}
+.lb-name{font-weight:600;display:flex;align-items:center;gap:8px}
+.lb-pts{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:var(--ac)}
+.lb-exact{font-weight:700;color:#fbbf24}
+.lb-correct{font-weight:700;color:var(--win)}
+.lb-wrong{color:var(--mu)}
+.lb-bar-wrap{height:4px;background:var(--b);border-radius:2px;margin-top:3px;min-width:60px}
+.lb-bar{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--ac),var(--ac2));transition:width .5s}
+
+/* ── ADMIN ── */
+.admin-section{background:var(--s);border:1px solid var(--b);border-radius:12px;padding:18px;margin-bottom:16px}
+.admin-title{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:.5px;color:var(--ac2);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.setting-item{display:flex;flex-direction:column;gap:5px}
+.setting-label{font-size:11px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.5px}
+.setting-input{background:var(--s2);border:1px solid var(--b);border-radius:7px;padding:7px 10px;color:var(--tx);font-size:13px;font-family:'Barlow',sans-serif;outline:none;width:100%}
+.setting-input:focus{border-color:rgba(0,212,170,.4)}
+.admin-predictions-table{width:100%;border-collapse:collapse;font-size:12px}
+.apt th{font-size:10px;color:var(--mu);font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:5px 8px;border-bottom:1px solid var(--b);text-align:left;white-space:nowrap}
+.apt td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+.apt tr:hover td{background:rgba(255,255,255,.02)}
+.ts-label{font-size:10px;color:var(--mu);white-space:nowrap}
+.export-btn{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;padding:8px 18px;border-radius:7px;border:1px solid var(--ac);background:transparent;color:var(--ac);cursor:pointer;transition:all .2s}
+.export-btn:hover{background:var(--ac);color:#000}
+
+/* ── GROUPS ── */
+.groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.gc{background:var(--s);border:1px solid var(--b);border-radius:12px;overflow:hidden}
+.gh{padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--b)}
+.gl2{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;line-height:1;width:36px;flex-shrink:0}
+.gt{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#fff}
+.gs{font-size:11px;color:var(--mu);margin-top:2px}
+.standings{padding:4px 0}
+.sth{display:grid;grid-template-columns:20px 1fr 26px 26px 26px 34px;padding:4px 14px;gap:4px;border-bottom:1px solid var(--b)}
+.sh{font-size:10px;font-weight:700;color:var(--mu);text-align:center;letter-spacing:.5px}
+.sh.l{text-align:left}
+.str{display:grid;grid-template-columns:20px 1fr 26px 26px 26px 34px;align-items:center;padding:5px 14px;gap:4px;font-size:12px;border-left:3px solid transparent}
+.str.q1{border-left-color:var(--win)}
+.str.q2{border-left-color:#3b82f6}
+.str.q3{border-left-color:var(--ac2)}
+.spos{color:var(--mu);font-size:11px;font-weight:700}
+.steam{display:flex;align-items:center;gap:5px;font-weight:500}
+.sn{text-align:center;font-size:12px;color:var(--mu)}
+.sp{text-align:center;font-size:13px;font-weight:700;color:var(--ac)}
+
+/* ── KNOCKOUT BRACKET ── */
+.ko-scroll{overflow-x:auto;padding-bottom:8px}
+.bracket{display:flex;min-width:1200px;padding:16px 0}
+.br-round{display:flex;flex-direction:column;flex:1;padding:0 6px}
+.rt{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--mu);text-align:center;padding-bottom:10px;text-transform:uppercase;border-bottom:1px solid var(--b);margin-bottom:10px}
+.br-matches{display:flex;flex-direction:column;justify-content:space-around;flex:1;gap:6px}
+.br-match{background:var(--s);border:1px solid var(--b);border-radius:8px;overflow:hidden;min-width:148px}
+.br-team{display:flex;align-items:center;justify-content:space-between;gap:5px;padding:6px 8px;font-size:11px;font-weight:500;border-bottom:1px solid var(--b)}
+.br-team:last-child{border-bottom:none}
+.br-team.winner{background:rgba(16,185,129,.15);color:#fff;font-weight:700}
+.br-team.loser{opacity:.3}
+.br-team.tbd{color:var(--mu);font-style:italic}
+.br-score-bar{display:flex;align-items:center;justify-content:space-between;padding:2px 8px;background:rgba(0,0,0,.2);border-top:1px solid var(--b);font-size:10px;color:var(--mu)}
+
+/* ── PROGRESS ── */
+.prog-wrap{margin-bottom:16px}
+.prog-info{display:flex;justify-content:space-between;font-size:12px;color:var(--mu);margin-bottom:5px}
+.prog-bar{height:3px;background:var(--b);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2));transition:width .4s}
+
+/* champion */
+.champ-box{text-align:center;padding:28px 20px;border-radius:14px;background:linear-gradient(135deg,rgba(0,212,170,.1),rgba(245,158,11,.08));border:1px solid rgba(0,212,170,.2);margin-bottom:20px;display:none}
+.champ-box.show{display:block}
+.champ-trophy{font-size:52px;margin-bottom:8px}
+.champ-name{font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:#fff}
+
+@media(max-width:700px){
+  .tabs{display:none}
+  .mtabs{display:flex;overflow-x:auto;gap:3px;padding:8px 12px;background:var(--s);border-bottom:1px solid var(--b)}
+  .mtab{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;padding:5px 10px;border-radius:6px;border:none;cursor:pointer;white-space:nowrap;color:var(--mu);background:transparent}
+  .mtab.active{background:var(--ac);color:#000}
+  .view{padding:12px}
+  .match-card-inner{grid-template-columns:62px 1fr 170px 1fr 0px;gap:4px}
+  .m-venue{display:none}
+  header{padding:0 12px}
+  .settings-grid{grid-template-columns:1fr}
+}
+@media(min-width:701px){.mtabs{display:none}}
+</style>
+</head>
+<body>
+
+<!-- API SETUP OVERLAY -->
+<div class="overlay" id="overlay-apisetup">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title">🔗 Connect to Google Sheets</div>
+    <div class="modal-sub">Enter your Apps Script Web App URL. Once connected, open the HTML file in a text editor, paste the URL into the <code style="background:var(--s2);padding:1px 6px;border-radius:3px;font-size:12px">BAKED_IN_URL</code> line, then re-share — your friends will never see this screen.</div>
+    <div class="field-label">Apps Script Web App URL</div>
+    <input class="field-input" id="api-url-input" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+    <div class="err-msg hide" id="apisetup-err"></div>
+    <button class="btn-primary" onclick="saveApiUrl()">Connect & Continue</button>
+    <div class="divider"></div>
+    <div style="font-size:12px;color:var(--mu);line-height:1.8">
+      <strong style="color:var(--ac2)">Step 1 — Deploy the backend (once)</strong><br>
+      1. Go to <a href="https://script.google.com" target="_blank" style="color:var(--ac)">script.google.com</a> → New project<br>
+      2. Paste <strong>Code.gs</strong> into the editor → Save<br>
+      3. <strong>Deploy → New Deployment → Web App</strong><br>
+      4. Execute as: <strong>Me</strong> &nbsp;·&nbsp; Access: <strong>Anyone</strong><br>
+      5. Authorise → copy the <strong>/exec URL</strong><br><br>
+      <strong style="color:var(--ac2)">Step 2 — Host on GitHub Pages (once)</strong><br>
+      6. Go to <a href="https://github.com" target="_blank" style="color:var(--ac)">github.com</a> → New public repo<br>
+      7. Upload this HTML file renamed as <strong>index.html</strong><br>
+      8. Settings → Pages → Branch: main → Save<br>
+      9. Share <code style="background:var(--s2);padding:1px 5px;border-radius:3px">https://yourname.github.io/repo</code> with friends<br><br>
+      <strong style="color:var(--ac2)">Step 3 — Pre-configure (so friends skip this screen)</strong><br>
+      10. Open the GitHub Pages link → paste the /exec URL above → Connect<br>
+      11. Open <strong>index.html</strong> in a text editor → find <code style="background:var(--s2);padding:1px 5px;border-radius:3px">BAKED_IN_URL = ''</code><br>
+      12. Paste your /exec URL inside the quotes → save → re-upload to GitHub<br>
+      13. Friends open your GitHub Pages link → they go straight to Register ✓
+    </div>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div class="overlay hide" id="overlay-loading">
+  <div style="text-align:center;color:var(--tx)">
+    <div style="font-size:40px;margin-bottom:12px">⚽</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--ac);margin-bottom:6px" id="loading-msg">Loading…</div>
+    <div style="font-size:12px;color:var(--mu)">Fetching data from Google Sheets</div>
+  </div>
+</div>
+
+<!-- CONNECTION ERROR OVERLAY -->
+<div class="overlay hide" id="overlay-apierr">
+  <div class="modal">
+    <div class="modal-title" style="color:var(--ac3)">⚠️ Connection Error</div>
+    <div class="modal-sub" id="load-err">Could not connect to the backend.</div>
+    <button class="btn-primary" onclick="hide('overlay-apierr');showApiSetup()">Change API URL</button>
+    <button class="btn-secondary" onclick="location.reload()">Retry</button>
+  </div>
+</div>
+
+<!-- LOGIN OVERLAY -->
+<div class="overlay hide" id="overlay-login">
+  <div class="modal">
+    <div class="modal-title">⚽ WC 2026 Predictor</div>
+    <div class="modal-sub">Sign in to submit your match predictions</div>
+    <div class="field-label">Your Name</div>
+    <input class="field-input" id="login-name" placeholder="Enter your name" autocomplete="off">
+    <div class="field-label">PIN (4 digits)</div>
+    <input class="field-input" id="login-pin" type="password" placeholder="••••" maxlength="4" autocomplete="off">
+    <div class="err-msg hide" id="login-err"></div>
+    <button class="btn-primary" onclick="doLogin()">Sign In</button>
+    <button class="btn-secondary" onclick="showRegister()">New? Register here</button>
+    <div class="divider"></div>
+    <button class="btn-secondary" onclick="showAdminLogin()" style="font-size:11px;color:var(--mu)">Admin Login</button>
+  </div>
+</div>
+
+<!-- REGISTER OVERLAY -->
+<div class="overlay hide" id="overlay-register">
+  <div class="modal">
+    <div class="modal-title">Register</div>
+    <div class="modal-sub" id="reg-sub">Create your account to join the prediction game</div>
+    <div class="field-label">Your Name</div>
+    <input class="field-input" id="reg-name" placeholder="Enter your name" autocomplete="off">
+    <div class="field-label">Choose a PIN (4 digits)</div>
+    <input class="field-input" id="reg-pin" type="password" placeholder="••••" maxlength="4" autocomplete="off">
+    <div class="field-label">Confirm PIN</div>
+    <input class="field-input" id="reg-pin2" type="password" placeholder="••••" maxlength="4" autocomplete="off">
+    <div class="err-msg hide" id="reg-err"></div>
+    <button class="btn-primary" onclick="doRegister()">Create Account</button>
+    <button class="btn-secondary" onclick="showLogin()">Back to Sign In</button>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN OVERLAY -->
+<div class="overlay hide" id="overlay-admin-login">
+  <div class="modal">
+    <div class="modal-title">🔐 Admin Login</div>
+    <div class="modal-sub">Enter the admin PIN to access admin controls</div>
+    <div class="field-label">Admin PIN</div>
+    <input class="field-input" id="admin-pin-input" type="password" placeholder="Admin PIN" autocomplete="off">
+    <div class="err-msg hide" id="admin-err"></div>
+    <button class="btn-primary" onclick="doAdminLogin()">Enter Admin</button>
+    <button class="btn-secondary" onclick="showLogin()">Back</button>
+  </div>
+</div>
+
+<!-- ADMIN SETUP (first time) -->
+<div class="overlay hide" id="overlay-setup">
+  <div class="modal">
+    <div class="modal-title">⚙️ First-Time Setup</div>
+    <div class="modal-sub">Set up the prediction game. You only do this once.</div>
+    <div class="field-label">Admin PIN (keep this safe!)</div>
+    <input class="field-input" id="setup-admin-pin" type="password" placeholder="Choose a PIN" maxlength="6" autocomplete="off">
+    <div class="field-label">Max Players Allowed</div>
+    <input class="field-input" id="setup-max-players" type="number" min="2" max="50" value="20">
+    <div class="field-label">Default Lockout (mins before kickoff, negative = after)</div>
+    <input class="field-input" id="setup-lockout" type="number" value="1" step="1">
+    <div class="err-msg hide" id="setup-err"></div>
+    <button class="btn-primary" onclick="doSetup()">Start the Game!</button>
+  </div>
+</div>
+
+<header>
+  <div class="logo">⚽ WC <span>2026</span></div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchView('predict')" id="tab-predict">My Predictions</button>
+    <button class="tab" onclick="switchView('leaderboard')">🏆 Leaderboard</button>
+    <button class="tab" onclick="switchView('groups')">Groups</button>
+    <button class="tab" onclick="switchView('knockout')">Knockout</button>
+    <button class="tab admin-only hide" onclick="switchView('admin')" id="tab-admin">⚙️ Admin</button>
+  </div>
+  <div class="header-right">
+    <span class="admin-badge hide" id="admin-badge">ADMIN</span>
+    <div class="tz-picker" id="tz-picker">
+      <div class="tz-backdrop" id="tz-backdrop" onclick="closeTzDropdown()"></div>
+      <button class="tz-trigger" onclick="toggleTzDropdown(event)" title="Change timezone">
+        🌐 <span id="tz-label">SGT</span> ▾
+      </button>
+      <div class="tz-dropdown" id="tz-dropdown">
+        <div class="tz-dropdown-title">🌐 Select your timezone</div>
+        <div class="tz-list" id="tz-list"></div>
+      </div>
+    </div>
+    <div class="user-badge" id="user-badge" onclick="doLogout()">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-badge-name">Not logged in</span>
+    </div>
+  </div>
+</header>
+
+<div class="mtabs">
+  <button class="mtab active" onclick="switchView('predict')">Predict</button>
+  <button class="mtab" onclick="switchView('leaderboard')">🏆 Board</button>
+  <button class="mtab" onclick="switchView('groups')">Groups</button>
+  <button class="mtab" onclick="switchView('knockout')">Bracket</button>
+  <button class="mtab admin-only hide" onclick="switchView('admin')">Admin</button>
+</div>
+
+<main>
+<!-- PREDICT -->
+<div class="view active" id="view-predict">
+  <div class="prog-wrap">
+    <div class="prog-info"><span id="pred-prog-label">Your prediction progress</span><span id="pred-prog-text">0 / 72 submitted</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="pred-prog-fill" style="width:0%"></div></div>
+  </div>
+  <div class="toolbar">
+    <button class="flt-btn active" onclick="setFilter('all',this)">All</button>
+    <button class="flt-btn" onclick="setFilter('group',this)">Group Stage</button>
+    <button class="flt-btn" onclick="setFilter('ko',this)">Knockout</button>
+    <button class="flt-btn" onclick="setFilter('open',this)">Open</button>
+    <button class="flt-btn" onclick="setFilter('done',this)">Predicted</button>
+    <input class="srch" id="fix-search" placeholder="Search team…" oninput="renderPredictions()">
+  </div>
+  <div id="predictions-list"></div>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="view" id="view-leaderboard">
+  <div id="leaderboard-content"></div>
+</div>
+
+<!-- GROUPS -->
+<div class="view" id="view-groups">
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mu)"><div style="width:3px;height:16px;border-radius:2px;background:var(--win)"></div>1st – Auto qualify</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mu)"><div style="width:3px;height:16px;border-radius:2px;background:#3b82f6"></div>2nd – Auto qualify</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mu)"><div style="width:3px;height:16px;border-radius:2px;background:var(--ac2)"></div>3rd – Possible qualify</div>
+  </div>
+  <div class="groups-grid" id="groups-grid"></div>
+</div>
+
+<!-- KNOCKOUT -->
+<div class="view" id="view-knockout">
+  <div class="champ-box" id="champ-box">
+    <div class="champ-trophy">🏆</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;color:var(--ac);text-transform:uppercase;margin-bottom:6px">World Cup 2026 Champion</div>
+    <div class="champ-name" id="champ-name"></div>
+  </div>
+  <div style="text-align:center;font-size:11px;color:var(--mu);margin-bottom:8px">← Scroll to see full bracket →</div>
+  <div class="ko-scroll"><div class="bracket" id="bracket"></div></div>
+</div>
+
+<!-- ADMIN -->
+<div class="view" id="view-admin">
+  <div class="admin-section">
+    <div class="admin-title">👥 Registered Players</div>
+    <div id="admin-players"></div>
+  </div>
+  <div class="admin-section">
+    <div class="admin-title" style="justify-content:space-between">
+      <span>⚙️ Game Settings</span>
+      <button class="btn-danger" style="font-size:11px;padding:4px 10px" onclick="showApiSetup()">🔗 Change API URL</button>
+    </div>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:10px;word-break:break-all">
+      Connected: <span style="color:var(--ac)" id="api-url-display"></span><br>
+      <span style="color:var(--ac2)">💡 To pre-configure for friends:</span> open the HTML in a text editor, find <code style="background:var(--s2);padding:1px 5px;border-radius:3px">BAKED_IN_URL = ''</code> and paste your URL inside the quotes. Then re-share the file — no setup screen for anyone.
+    </div>
+    <div class="settings-grid">
+      <div class="setting-item">
+        <div class="setting-label">Max Players</div>
+        <input class="setting-input" id="cfg-max-players" type="number" min="2" max="100" onchange="saveConfig()">
+      </div>
+      <div class="setting-item">
+        <div class="setting-label">Default Lockout (mins before KO, negative = after)</div>
+        <input class="setting-input" id="cfg-lockout" type="number" step="1" onchange="saveConfig()">
+      </div>
+    </div>
+  </div>
+  <div class="admin-section">
+    <div class="admin-title">⚽ Enter Official Results</div>
+    <div style="font-size:12px;color:var(--mu);margin-bottom:12px">Enter the real match scores here. These determine points for all players.</div>
+    <div id="admin-results-list"></div>
+  </div>
+  <div class="admin-section">
+    <div class="admin-title">📋 All Predictions <button class="export-btn" onclick="exportCSV()" style="margin-left:auto">⬇ Export CSV</button></div>
+    <div id="admin-predictions"></div>
+  </div>
+</div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// MATCH DATA
+// ═══════════════════════════════════════════════════════
+const GROUPS={A:{t:['Mexico','South Africa','South Korea','Czechia'],f:['🇲🇽','🇿🇦','🇰🇷','🇨🇿']},B:{t:['Canada','Bosnia & Herz.','Qatar','Switzerland'],f:['🇨🇦','🇧🇦','🇶🇦','🇨🇭']},C:{t:['Brazil','Morocco','Scotland','Haiti'],f:['🇧🇷','🇲🇦','🏴󠁧󠁢󠁳󠁣󠁴󠁿','🇭🇹']},D:{t:['USA','Paraguay','Australia','Türkiye'],f:['🇺🇸','🇵🇾','🇦🇺','🇹🇷']},E:{t:['Germany','Curaçao',"Côte d'Ivoire",'Ecuador'],f:['🇩🇪','🇨🇼','🇨🇮','🇪🇨']},F:{t:['Netherlands','Japan','Sweden','Tunisia'],f:['🇳🇱','🇯🇵','🇸🇪','🇹🇳']},G:{t:['Belgium','Egypt','Iran','New Zealand'],f:['🇧🇪','🇪🇬','🇮🇷','🇳🇿']},H:{t:['Spain','Cape Verde','Saudi Arabia','Uruguay'],f:['🇪🇸','🇨🇻','🇸🇦','🇺🇾']},I:{t:['France','Senegal','Norway','Iraq'],f:['🇫🇷','🇸🇳','🇳🇴','🇮🇶']},J:{t:['Argentina','Algeria','Austria','Jordan'],f:['🇦🇷','🇩🇿','🇦🇹','🇯🇴']},K:{t:['Portugal','DR Congo','Uzbekistan','Colombia'],f:['🇵🇹','🇨🇩','🇺🇿','🇨🇴']},L:{t:['England','Croatia','Ghana','Panama'],f:['🏴󠁧󠁢󠁥󠁮󠁧󠁿','🇭🇷','🇬🇭','🇵🇦']}};
+const GL=Object.keys(GROUPS);
+const GC=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f97316','#84cc16','#a855f7','#ef4444','#14b8a6','#6366f1'];
+
+// Store kickoff times as UTC ms for easier comparison
+// ET = UTC-4 in summer (EDT). All stored times are EDT.
+function etToUtcMs(s){const[d,t]=s.split(' ');const[Y,M,D]=d.split('-').map(Number);const[h,m]=t.split(':').map(Number);return Date.UTC(Y,M-1,D,h+4,m);}
+
+// Generic UTC-ms to display strings in any IANA timezone
+function utcMsToTZ(ms,tz){
+  const d=new Date(ms);
+  const disp=d.toLocaleTimeString('en-SG',{timeZone:tz,hour:'numeric',minute:'2-digit',hour12:true});
+  const dateStr=d.toLocaleDateString('en-SG',{timeZone:tz,weekday:'short',month:'short',day:'numeric'});
+  let dayKey;
+  try{dayKey=new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(d);}
+  catch(e){dayKey=d.toISOString().slice(0,10);}
+  return{display:disp,date:dateStr,dayKey};
+}
+
+// Keep backward compat alias
+function utcMsToSGT(ms){return utcMsToTZ(ms,'Asia/Singapore');}
+
+// Timezone catalogue
+const TZ_LIST=[
+  {label:'SGT – Singapore (UTC+8)',tz:'Asia/Singapore'},
+  {label:'MYT – Malaysia (UTC+8)',tz:'Asia/Kuala_Lumpur'},
+  {label:'JST – Japan (UTC+9)',tz:'Asia/Tokyo'},
+  {label:'KST – Korea (UTC+9)',tz:'Asia/Seoul'},
+  {label:'AEST – Sydney (UTC+10/11)',tz:'Australia/Sydney'},
+  {label:'AEDT – Melbourne (UTC+11)',tz:'Australia/Melbourne'},
+  {label:'HKT – Hong Kong (UTC+8)',tz:'Asia/Hong_Kong'},
+  {label:'CST – China (UTC+8)',tz:'Asia/Shanghai'},
+  {label:'WIB – Jakarta (UTC+7)',tz:'Asia/Jakarta'},
+  {label:'PHT – Philippines (UTC+8)',tz:'Asia/Manila'},
+  {label:'IST – India (UTC+5:30)',tz:'Asia/Kolkata'},
+  {label:'PKT – Pakistan (UTC+5)',tz:'Asia/Karachi'},
+  {label:'GST – Dubai (UTC+4)',tz:'Asia/Dubai'},
+  {label:'CET – Central Europe (UTC+1/2)',tz:'Europe/Paris'},
+  {label:'BST – UK (UTC+0/1)',tz:'Europe/London'},
+  {label:'BRT – Brazil (UTC-3)',tz:'America/Sao_Paulo'},
+  {label:'EDT – US East (UTC-4)',tz:'America/New_York'},
+  {label:'CDT – US Central (UTC-5)',tz:'America/Chicago'},
+  {label:'MDT – US Mountain (UTC-6)',tz:'America/Denver'},
+  {label:'PDT – US Pacific (UTC-7)',tz:'America/Los_Angeles'},
+  {label:'NZST – New Zealand (UTC+12)',tz:'Pacific/Auckland'},
+  {label:'CAT – South Africa (UTC+2)',tz:'Africa/Johannesburg'},
+  {label:'WAT – West Africa (UTC+1)',tz:'Africa/Lagos'},
+  {label:'EAT – East Africa (UTC+3)',tz:'Africa/Nairobi'},
+];
+
+let userTz=(()=>{try{return localStorage.getItem('wc26_tz')||'Asia/Singapore';}catch(e){return 'Asia/Singapore';}})();
+
+const GF=[['A',0,1,'2026-06-11 15:00','Azteca, MX'],['A',2,3,'2026-06-11 22:00','Akron, MX'],['B',0,1,'2026-06-12 15:00','BMO, Toronto'],['D',0,1,'2026-06-12 21:00','SoFi, LA'],['B',2,3,'2026-06-13 15:00','Levi\'s, SF'],['C',0,1,'2026-06-13 18:00','MetLife, NY'],['C',2,3,'2026-06-13 21:00','Gillette, BOS'],['D',2,3,'2026-06-14 00:00','BC Place, VAN'],['E',0,1,'2026-06-14 13:00','NRG, HOU'],['F',0,1,'2026-06-14 16:00','AT&T, DAL'],['E',2,3,'2026-06-14 19:00','Lincoln, PHI'],['F',3,2,'2026-06-14 22:00','BBVA, MTY'],['H',0,1,'2026-06-15 12:00','MB, ATL'],['G',0,1,'2026-06-15 15:00','Lumen, SEA'],['H',2,3,'2026-06-15 18:00','Hard Rock, MIA'],['G',2,3,'2026-06-15 21:00','SoFi, LA'],['I',0,1,'2026-06-16 15:00','MetLife, NY'],['I',3,2,'2026-06-16 18:00','Gillette, BOS'],['J',0,1,'2026-06-16 21:00','Arrowhead, KC'],['J',2,3,'2026-06-17 00:00','Levi\'s, SF'],['K',0,1,'2026-06-17 13:00','NRG, HOU'],['L',0,1,'2026-06-17 16:00','AT&T, DAL'],['L',2,3,'2026-06-17 19:00','BMO, Toronto'],['K',2,3,'2026-06-17 22:00','Azteca, MX'],['A',3,1,'2026-06-18 12:00','MB, ATL'],['B',3,1,'2026-06-18 15:00','SoFi, LA'],['B',0,2,'2026-06-18 18:00','BC Place, VAN'],['A',0,2,'2026-06-18 21:00','Akron, MX'],['D',0,2,'2026-06-19 15:00','Lumen, SEA'],['C',2,1,'2026-06-19 18:00','Gillette, BOS'],['C',0,3,'2026-06-19 20:30','Lincoln, PHI'],['D',3,1,'2026-06-19 23:00','Levi\'s, SF'],['F',0,2,'2026-06-20 13:00','NRG, HOU'],['E',0,2,'2026-06-20 16:00','BMO, Toronto'],['E',3,1,'2026-06-20 20:00','Arrowhead, KC'],['F',3,1,'2026-06-21 00:00','BBVA, MTY'],['H',0,2,'2026-06-21 12:00','MB, ATL'],['G',0,2,'2026-06-21 15:00','SoFi, LA'],['H',3,1,'2026-06-21 18:00','Hard Rock, MIA'],['G',3,1,'2026-06-21 21:00','BC Place, VAN'],['J',0,2,'2026-06-22 13:00','AT&T, DAL'],['I',0,3,'2026-06-22 17:00','Lincoln, PHI'],['I',2,1,'2026-06-22 20:00','MetLife, NY'],['J',3,1,'2026-06-22 23:00','Levi\'s, SF'],['K',0,2,'2026-06-23 13:00','NRG, HOU'],['L',0,2,'2026-06-23 16:00','Gillette, BOS'],['L',3,1,'2026-06-23 19:00','BMO, Toronto'],['K',3,1,'2026-06-23 22:00','Akron, MX'],['B',3,0,'2026-06-24 15:00','BC Place, VAN'],['B',1,2,'2026-06-24 15:00','Lumen, SEA'],['C',2,0,'2026-06-24 18:00','Hard Rock, MIA'],['C',1,3,'2026-06-24 18:00','MB, ATL'],['A',3,0,'2026-06-24 21:00','Azteca, MX'],['A',1,2,'2026-06-24 21:00','BBVA, MTY'],['E',1,2,'2026-06-25 16:00','Lincoln, PHI'],['E',3,0,'2026-06-25 16:00','MetLife, NY'],['F',1,2,'2026-06-25 19:00','AT&T, DAL'],['F',3,0,'2026-06-25 19:00','Arrowhead, KC'],['D',3,0,'2026-06-25 22:00','SoFi, LA'],['D',1,2,'2026-06-25 22:00','Levi\'s, SF'],['I',2,0,'2026-06-26 15:00','Gillette, BOS'],['I',1,3,'2026-06-26 15:00','BMO, Toronto'],['H',1,2,'2026-06-26 20:00','NRG, HOU'],['H',3,0,'2026-06-26 20:00','Akron, MX'],['G',1,2,'2026-06-26 23:00','Lumen, SEA'],['G',3,0,'2026-06-26 23:00','BC Place, VAN'],['L',3,0,'2026-06-27 17:00','MetLife, NY'],['L',1,2,'2026-06-27 17:00','Lincoln, PHI'],['K',3,0,'2026-06-27 19:30','Hard Rock, MIA'],['K',1,2,'2026-06-27 19:30','MB, ATL'],['J',1,2,'2026-06-27 22:00','Arrowhead, KC'],['J',3,0,'2026-06-27 22:00','AT&T, DAL']];
+
+const KO=[{id:'r32_0',r:'R32',n:73,lA:'Runner-up A',lB:'Runner-up B',et:'2026-06-28 15:00',v:'SoFi, LA',sA:{t:'r',g:'A'},sB:{t:'r',g:'B'}},{id:'r32_1',r:'R32',n:76,lA:'Winner C',lB:'Runner-up F',et:'2026-06-29 13:00',v:'NRG, HOU',sA:{t:'w',g:'C'},sB:{t:'r',g:'F'}},{id:'r32_2',r:'R32',n:74,lA:'Winner E',lB:'Best 3rd',et:'2026-06-29 16:30',v:'Gillette, BOS',sA:{t:'w',g:'E'},sB:{t:'3',s:0}},{id:'r32_3',r:'R32',n:75,lA:'Winner F',lB:'Runner-up C',et:'2026-06-29 21:00',v:'BBVA, MTY',sA:{t:'w',g:'F'},sB:{t:'r',g:'C'}},{id:'r32_4',r:'R32',n:78,lA:'Runner-up E',lB:'Runner-up I',et:'2026-06-30 13:00',v:'AT&T, DAL',sA:{t:'r',g:'E'},sB:{t:'r',g:'I'}},{id:'r32_5',r:'R32',n:77,lA:'Winner I',lB:'Best 3rd',et:'2026-06-30 17:00',v:'MetLife, NY',sA:{t:'w',g:'I'},sB:{t:'3',s:1}},{id:'r32_6',r:'R32',n:79,lA:'Winner A',lB:'Best 3rd',et:'2026-06-30 21:00',v:'Azteca, MX',sA:{t:'w',g:'A'},sB:{t:'3',s:2}},{id:'r32_7',r:'R32',n:80,lA:'Winner L',lB:'Best 3rd',et:'2026-07-01 12:00',v:'MB, ATL',sA:{t:'w',g:'L'},sB:{t:'3',s:3}},{id:'r32_8',r:'R32',n:82,lA:'Winner G',lB:'Best 3rd',et:'2026-07-01 16:00',v:'Lumen, SEA',sA:{t:'w',g:'G'},sB:{t:'3',s:4}},{id:'r32_9',r:'R32',n:81,lA:'Winner D',lB:'Best 3rd',et:'2026-07-01 20:00',v:'Levi\'s, SF',sA:{t:'w',g:'D'},sB:{t:'3',s:5}},{id:'r32_10',r:'R32',n:84,lA:'Winner H',lB:'Runner-up J',et:'2026-07-02 15:00',v:'SoFi, LA',sA:{t:'w',g:'H'},sB:{t:'r',g:'J'}},{id:'r32_11',r:'R32',n:83,lA:'Runner-up K',lB:'Runner-up L',et:'2026-07-02 19:00',v:'BMO, Toronto',sA:{t:'r',g:'K'},sB:{t:'r',g:'L'}},{id:'r32_12',r:'R32',n:85,lA:'Winner B',lB:'Best 3rd',et:'2026-07-02 23:00',v:'BC Place, VAN',sA:{t:'w',g:'B'},sB:{t:'3',s:6}},{id:'r32_13',r:'R32',n:88,lA:'Runner-up D',lB:'Runner-up G',et:'2026-07-03 14:00',v:'AT&T, DAL',sA:{t:'r',g:'D'},sB:{t:'r',g:'G'}},{id:'r32_14',r:'R32',n:86,lA:'Winner J',lB:'Runner-up H',et:'2026-07-03 18:00',v:'Hard Rock, MIA',sA:{t:'w',g:'J'},sB:{t:'r',g:'H'}},{id:'r32_15',r:'R32',n:87,lA:'Winner K',lB:'Best 3rd',et:'2026-07-03 21:30',v:'Arrowhead, KC',sA:{t:'w',g:'K'},sB:{t:'3',s:7}},{id:'r16_0',r:'R16',n:90,lA:'W M73',lB:'W M75',et:'2026-07-04 13:00',v:'NRG, HOU',src:['r32_0','r32_3']},{id:'r16_1',r:'R16',n:89,lA:'W M74',lB:'W M77',et:'2026-07-04 17:00',v:'Lincoln, PHI',src:['r32_2','r32_5']},{id:'r16_2',r:'R16',n:91,lA:'W M76',lB:'W M78',et:'2026-07-05 16:00',v:'MetLife, NY',src:['r32_1','r32_4']},{id:'r16_3',r:'R16',n:92,lA:'W M79',lB:'W M80',et:'2026-07-05 20:00',v:'Azteca, MX',src:['r32_6','r32_7']},{id:'r16_4',r:'R16',n:93,lA:'W M83',lB:'W M84',et:'2026-07-06 15:00',v:'AT&T, DAL',src:['r32_11','r32_10']},{id:'r16_5',r:'R16',n:94,lA:'W M81',lB:'W M82',et:'2026-07-06 20:00',v:'Lumen, SEA',src:['r32_9','r32_8']},{id:'r16_6',r:'R16',n:95,lA:'W M86',lB:'W M88',et:'2026-07-07 12:00',v:'MB, ATL',src:['r32_14','r32_13']},{id:'r16_7',r:'R16',n:96,lA:'W M85',lB:'W M87',et:'2026-07-07 16:00',v:'BC Place, VAN',src:['r32_12','r32_15']},{id:'qf_0',r:'QF',n:97,lA:'W M89',lB:'W M90',et:'2026-07-09 16:00',v:'Gillette, BOS',src:['r16_1','r16_0']},{id:'qf_1',r:'QF',n:98,lA:'W M93',lB:'W M94',et:'2026-07-10 15:00',v:'SoFi, LA',src:['r16_4','r16_5']},{id:'qf_2',r:'QF',n:99,lA:'W M91',lB:'W M92',et:'2026-07-11 17:00',v:'Hard Rock, MIA',src:['r16_2','r16_3']},{id:'qf_3',r:'QF',n:100,lA:'W M95',lB:'W M96',et:'2026-07-11 21:00',v:'Arrowhead, KC',src:['r16_6','r16_7']},{id:'sf_0',r:'SF',n:101,lA:'W M97',lB:'W M98',et:'2026-07-14 15:00',v:'AT&T, DAL',src:['qf_0','qf_1']},{id:'sf_1',r:'SF',n:102,lA:'W M99',lB:'W M100',et:'2026-07-15 15:00',v:'MB, ATL',src:['qf_2','qf_3']},{id:'tp_0',r:'3RD',n:103,lA:'Loser SF1',lB:'Loser SF2',et:'2026-07-18 17:00',v:'Hard Rock, MIA',src:['sf_0','sf_1'],isTP:true},{id:'fin_0',r:'FIN',n:104,lA:'W M101',lB:'W M102',et:'2026-07-19 15:00',v:'MetLife, NY',src:['sf_0','sf_1']}];
+const KO_MAP={};KO.forEach(m=>KO_MAP[m.id]=m);
+
+// Precompute kickoff UTC ms
+const GF_KO=[]; GF.forEach(([gl,ai,bi,et,v],i)=>GF_KO.push(etToUtcMs(et)));
+const KO_KO={}; KO.forEach(m=>KO_KO[m.id]=etToUtcMs(m.et));
+
+// ═══════════════════════════════════════════════════════
+// STATE (in-memory; synced to storage)
+// ═══════════════════════════════════════════════════════
+let currentUser=null; // {name, isAdmin}
+let config={maxPlayers:20,lockoutMins:1,adminPinHash:'',initialized:false};
+let users={};   // name -> {pinHash}
+let officialResults={}; // gfIdx or koId -> {scoreA,scoreB,winner,via}
+let allPredictions={}; // userName -> {gfIdx|koId -> {scoreA,scoreB,winner,via,ts}}
+let lockoutOverrides={}; // gfIdx|koId -> offsetMins (override per match)
+let fixFilter='all';
+
+// ═══════════════════════════════════════════════════════
+// API — Google Apps Script backend
+// ═══════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────
+// ✏️  ADMIN: paste your Apps Script /exec URL below.
+//    After doing this, share the file — no one else
+//    needs to configure anything.
+// ─────────────────────────────────────────────────────
+const BAKED_IN_URL = 'https://script.google.com/macros/s/AKfycbwu8o2wkoR4I-rYqhoxPppZjAHlLGYFcaSfdsDaoq6lQZjuGwZeGmnxZ-niHk_IwPQ2/exec';
+
+// Runtime URL: baked-in takes priority, localStorage is fallback
+let API_URL = BAKED_IN_URL || localStorage.getItem('wc26_api_url') || '';
+
+// All calls use GET + JSON payload param — avoids CORS preflight issues with Apps Script
+async function api(action, body={}){
+  if(!API_URL) throw new Error('NO_API_URL');
+  const params = new URLSearchParams({ action, payload: JSON.stringify(body) });
+  const url = API_URL + '?' + params.toString();
+  const r = await fetch(url, { method:'GET', redirect:'follow' });
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const text = await r.text();
+  let data;
+  try { data = JSON.parse(text); } catch(e) { throw new Error('Bad response: '+text.slice(0,120)); }
+  if(data && data.error) throw new Error(data.error);
+  return data;
+}
+
+// In-memory cache so UI stays snappy
+const _cache={};
+function cacheSet(k,v){_cache[k]=v;}
+function cacheGet(k){return _cache[k];}
+
+async function loadAll(){
+  if(!API_URL){
+    // Only show setup screen if no baked-in URL AND none saved in localStorage
+    showApiSetup();
+    return;
+  }
+  showLoadingOverlay('Loading game data…');
+  try{
+    const [cfg,usrs,res,lo,preds]=await Promise.all([
+      api('getConfig',{}),
+      api('getUsers',{}),
+      api('getResults',{}),
+      api('getLockouts',{}),
+      api('getAllPredictions',{}),
+    ]);
+    config={...config,...cfg};
+    users={};
+    (usrs||[]).forEach(u=>{users[u.name]={displayName:u.displayName,pinHash:u.pinHash};});
+    officialResults=res||{};
+    lockoutOverrides=lo||{};
+    allPredictions=preds||{};
+    hideLoadingOverlay();
+    if(!config.initialized){showSetup();return;}
+    show('overlay-login');
+  }catch(e){
+    hideLoadingOverlay();
+    if(e.message==='NO_API_URL'){showApiSetup();return;}
+    showErr('load-err','Could not connect: '+e.message);
+    show('overlay-apierr');
+  }
+}
+
+async function saveConfig(){
+  config.maxPlayers=parseInt(document.getElementById('cfg-max-players')?.value||config.maxPlayers);
+  config.lockoutMins=parseFloat(document.getElementById('cfg-lockout')?.value||config.lockoutMins);
+  await api('saveConfig',config);
+  showToast('Settings saved ✓');
+}
+
+async function saveUsers(){}  // users saved via registerUser/deleteUser directly
+
+async function saveResults(){
+  // called per-result in adminUpdateResult/adminPickWinner/adminClearResult
+}
+
+async function savePredictions(){
+  // called per-prediction in update handlers
+}
+
+async function saveLockouts(){
+  // called per-lockout in adminUpdateLockout
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════
+function simpleHash(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return h.toString(36);}
+
+function showLogin(){hide('overlay-register');hide('overlay-admin-login');show('overlay-login');clearErr('login-err');}
+function showRegister(){hide('overlay-login');show('overlay-register');clearErr('reg-err');}
+function showAdminLogin(){hide('overlay-login');show('overlay-admin-login');clearErr('admin-err');}
+function showSetup(){hide('overlay-login');show('overlay-setup');}
+
+async function doSetup(){
+  const pin=document.getElementById('setup-admin-pin').value.trim();
+  const max=parseInt(document.getElementById('setup-max-players').value);
+  const lk=parseFloat(document.getElementById('setup-lockout').value);
+  if(!pin){showErr('setup-err','Enter an admin PIN');return;}
+  config={maxPlayers:max,lockoutMins:lk,adminPinHash:simpleHash(pin),initialized:true};
+  try{
+    await api('saveConfig',config);
+    hide('overlay-setup');
+    showToast('Game initialized! Share the HTML file with your friends.');
+  }catch(e){showErr('setup-err','Save failed: '+e.message);}
+}
+
+async function doLogin(){
+  const name=document.getElementById('login-name').value.trim();
+  const pin=document.getElementById('login-pin').value.trim();
+  if(!name||!pin){showErr('login-err','Enter name and PIN');return;}
+  const u=users[name.toLowerCase()];
+  if(!u){showErr('login-err','Name not found. Register first.');return;}
+  if(u.pinHash!==simpleHash(pin)){showErr('login-err','Wrong PIN');return;}
+  currentUser={name,isAdmin:false};
+  onLoggedIn();
+}
+
+async function doRegister(){
+  const name=document.getElementById('reg-name').value.trim();
+  const pin=document.getElementById('reg-pin').value.trim();
+  const pin2=document.getElementById('reg-pin2').value.trim();
+  if(!name){showErr('reg-err','Enter your name');return;}
+  if(pin.length<4){showErr('reg-err','PIN must be 4 digits');return;}
+  if(pin!==pin2){showErr('reg-err','PINs do not match');return;}
+  const key=name.toLowerCase();
+  if(users[key]){showErr('reg-err','Name already taken');return;}
+  if(Object.keys(users).length>=config.maxPlayers){showErr('reg-err',`Max players (${config.maxPlayers}) reached`);return;}
+  try{
+    await api('registerUser',{name:key,displayName:name,pinHash:simpleHash(pin)});
+    users[key]={pinHash:simpleHash(pin),displayName:name};
+    currentUser={name,isAdmin:false};
+    onLoggedIn();
+  }catch(e){showErr('reg-err',e.message);}
+}
+
+async function doAdminLogin(){
+  const pin=document.getElementById('admin-pin-input').value.trim();
+  if(simpleHash(pin)!==config.adminPinHash){showErr('admin-err','Wrong admin PIN');return;}
+  currentUser={name:'Admin',isAdmin:true};
+  onLoggedIn();
+}
+
+function onLoggedIn(){
+  hide('overlay-login');hide('overlay-register');hide('overlay-admin-login');
+  document.getElementById('user-badge-name').textContent=currentUser.name;
+  document.getElementById('user-avatar').textContent=currentUser.name[0].toUpperCase();
+  if(currentUser.isAdmin){
+    document.querySelectorAll('.admin-only').forEach(el=>el.classList.remove('hide'));
+    document.getElementById('admin-badge').classList.remove('hide');
+    document.getElementById('cfg-max-players').value=config.maxPlayers;
+    document.getElementById('cfg-lockout').value=config.lockoutMins;
+  }
+  // Ensure the predict view is active and visible before rendering into it
+  switchView('predict');
+  // Reset filter to All so everything shows
+  fixFilter='all';
+  document.querySelectorAll('.flt-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()==='All'));
+  render();
+}
+
+function doLogout(){
+  if(!confirm('Sign out?')) return;
+  currentUser=null;
+  show('overlay-login');
+}
+
+// ═══════════════════════════════════════════════════════
+// LOCKOUT
+// ═══════════════════════════════════════════════════════
+function isLocked(matchKey,kickoffMs){
+  const offset=lockoutOverrides[matchKey]!==undefined?lockoutOverrides[matchKey]:config.lockoutMins;
+  const lockMs=kickoffMs-(offset*60000);
+  return Date.now()>=lockMs;
+}
+function lockoutLabel(matchKey,kickoffMs){
+  const offset=lockoutOverrides[matchKey]!==undefined?lockoutOverrides[matchKey]:config.lockoutMins;
+  const lockMs=kickoffMs-(offset*60000);
+  const diffMs=lockMs-Date.now();
+  if(diffMs<=0) return 'Locked';
+  const diffMins=Math.round(diffMs/60000);
+  if(diffMins<60) return `Locks in ${diffMins}m`;
+  const diffHrs=Math.round(diffMins/60);
+  if(diffHrs<48) return `Locks in ${diffHrs}h`;
+  return `Locks in ${Math.round(diffHrs/24)}d`;
+}
+
+// ═══════════════════════════════════════════════════════
+// SCORING
+// ═══════════════════════════════════════════════════════
+function calcPoints(pred,official){
+  if(!pred||!official) return null;
+  const {scoreA:pA,scoreB:pB,winner:pW}=pred;
+  const {scoreA:oA,scoreB:oB,winner:oW}=official;
+  if(pA===null||pA===undefined||pB===null||pB===undefined) return null;
+  if(oA===null||oA===undefined||oB===null||oB===undefined) return null;
+  // Exact score
+  if(pA===oA&&pB===oB){
+    // For KO draw: also check winner
+    if(pA===pB){return pW&&oW&&pW.name===oW.name?3:1;}
+    return 3;
+  }
+  // Correct result (win/draw)
+  const pRes=pA>pB?'a':pA<pB?'b':'d';
+  const oRes=oA>oB?'a':oA<oB?'b':'d';
+  if(pRes===oRes){
+    if(pRes==='d'&&pW&&oW) return pW.name===oW.name?1:1; // 1pt for correct draw regardless of ET winner
+    return 1;
+  }
+  return 0;
+}
+
+// ═══════════════════════════════════════════════════════
+// GROUP STAGE LOGIC (using officialResults for standings)
+// ═══════════════════════════════════════════════════════
+const groupFixtures={};GL.forEach(g=>groupFixtures[g]=[]);
+GF.forEach(([gl,ai,bi,et,v],idx)=>groupFixtures[gl].push({idx,gl,ai,bi,et,v}));
+
+function getStandings(gl){
+  const g=GROUPS[gl];
+  const s=g.t.map((t,i)=>({idx:i,name:t,flag:g.f[i],pts:0,gd:0,gf:0,ga:0,played:0}));
+  groupFixtures[gl].forEach(({idx,ai,bi})=>{
+    const sc=officialResults[idx];
+    if(!sc||sc.scoreA===null||sc.scoreA===undefined) return;
+    const {scoreA:sA,scoreB:sB}=sc;
+    s[ai].played++;s[bi].played++;
+    s[ai].gf+=sA;s[ai].ga+=sB;s[bi].gf+=sB;s[bi].ga+=sA;
+    if(sA>sB)s[ai].pts+=3;else if(sB>sA)s[bi].pts+=3;else{s[ai].pts+=1;s[bi].pts+=1;}
+  });
+  s.forEach(t=>t.gd=t.gf-t.ga);
+  s.sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf);
+  return s;
+}
+function getAllThirds(){return GL.map(gl=>{const s=getStandings(gl);return{...s[2],gl};}).sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf);}
+function resolveSlot(slot){if(!slot)return null;const s=getStandings(slot.g);if(slot.t==='w')return{name:s[0].name,flag:s[0].flag};if(slot.t==='r')return{name:s[1].name,flag:s[1].flag};if(slot.t==='3'){const t=getAllThirds()[slot.s];return t?{name:t.name,flag:t.flag}:null;}return null;}
+function resolveKO(id){const m=KO_MAP[id];if(!m)return{tA:null,tB:null};let tA=null,tB=null;if(m.sA)tA=resolveSlot(m.sA);else if(m.src){const r=officialResults[m.src[0]];tA=r?r.winner:null;}if(m.sB)tB=resolveSlot(m.sB);else if(m.src){const r=officialResults[m.src[1]];tB=r?r.winner:null;}return{tA,tB};}
+function getKOLoser(id){const r=officialResults[id];if(!r||!r.winner)return null;const m=KO_MAP[id];let tA,tB;if(m.isTP){tA=getKOLoser2(m.src[0]);tB=getKOLoser2(m.src[1]);}else{const k=resolveKO(id);tA=k.tA;tB=k.tB;}if(!tA||!tB)return null;return r.winner.name===tA.name?tB:tA;}
+function getKOLoser2(id){const r=officialResults[id];if(!r||!r.winner)return null;const k=resolveKO(id);if(!k.tA||!k.tB)return null;return r.winner.name===k.tA.name?k.tB:k.tA;}
+
+// ═══════════════════════════════════════════════════════
+// PREDICTIONS VIEW
+// ═══════════════════════════════════════════════════════
+function setFilter(f,btn){fixFilter=f;document.querySelectorAll('.flt-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderPredictions();}
+
+function renderPredictions(){
+  if(!currentUser) return;
+  const search=document.getElementById('fix-search').value.toLowerCase();
+  const myPreds=allPredictions[currentUser.name.toLowerCase()]||{};
+
+  const all=[];
+  GF.forEach(([gl,ai,bi,et,v],idx)=>{
+    const g=GROUPS[gl];const sgt=utcMsToTZ(GF_KO[idx],userTz);
+    all.push({type:'group',gl,ai,bi,v,sgt,idx,ko:GF_KO[idx],nA:g.t[ai],fA:g.f[ai],nB:g.t[bi],fB:g.f[bi]});
+  });
+  KO.forEach(m=>{
+    const sgt=utcMsToTZ(KO_KO[m.id],userTz);
+    const{tA,tB}=m.isTP?{tA:getKOLoser2(m.src[0]),tB:getKOLoser2(m.src[1])}:resolveKO(m.id);
+    all.push({type:'ko',id:m.id,r:m.r,n:m.n,lA:m.lA,lB:m.lB,v:m.v,sgt,ko:KO_KO[m.id],tA,tB,isTP:m.isTP||false});
+  });
+  all.sort((a,b)=>a.ko-b.ko);
+
+  const filtered=all.filter(m=>{
+    if(fixFilter==='group'&&m.type!=='group') return false;
+    if(fixFilter==='ko'&&m.type!=='ko') return false;
+    const key=m.type==='group'?m.idx:m.id;
+    const pred=myPreds[key];
+    const hasPred=pred&&pred.scoreA!==null&&pred.scoreA!==undefined;
+    if(fixFilter==='done'&&!hasPred) return false;
+    if(fixFilter==='open'){ if(hasPred||isLocked(key,m.ko)) return false; }
+    // 'all' — no gate, ALL matches always shown
+    if(search){
+      const nA=m.type==='group'?m.nA:(m.tA?m.tA.name:m.lA);
+      const nB=m.type==='group'?m.nB:(m.tB?m.tB.name:m.lB);
+      if(!(nA+' '+nB+' '+(m.gl||'')).toLowerCase().includes(search)) return false;
+    }
+    return true;
+  });
+
+  // Group by day
+  const byDay={};
+  filtered.forEach(m=>{if(!byDay[m.sgt.dayKey])byDay[m.sgt.dayKey]={label:m.sgt.date,matches:[]};byDay[m.sgt.dayKey].matches.push(m);});
+
+  const container=document.getElementById('predictions-list');
+  if(!container) return;
+  if(!filtered.length){
+    const msg=fixFilter==='open'?'All upcoming matches are locked or already predicted':'No matches found';
+    container.innerHTML=`<div style="color:var(--mu);text-align:center;padding:40px;font-size:14px">${msg}</div>`;
+    return;
+  }
+
+  let html='';
+  Object.keys(byDay).sort().forEach(dk=>{
+    const{label,matches}=byDay[dk];
+    html+=`<div class="day-block"><div class="day-hdr">${label}<span class="day-cnt">${matches.length}</span></div>`;
+    matches.forEach(m=>{html+=m.type==='group'?renderGroupPredRow(m,myPreds):renderKOPredRow(m,myPreds);});
+    html+='</div>';
+  });
+  container.innerHTML=html;
+
+  // Progress
+  const doneG=GF.reduce((acc,_,i)=>{const p=myPreds[i];return acc+(p&&p.scoreA!==null&&p.scoreA!==undefined?1:0);},0);
+  const doneKO=KO.reduce((acc,m)=>{const p=myPreds[m.id];return acc+(p&&p.scoreA!==null&&p.scoreA!==undefined?1:0);},0);
+  document.getElementById('pred-prog-fill').style.width=(doneG/GF.length*100)+'%';
+  document.getElementById('pred-prog-text').textContent=`${doneG}/${GF.length} group · ${doneKO}/${KO.length} knockout`;
+}
+
+function renderGroupPredRow(m,myPreds){
+  const pred=myPreds[m.idx];
+  const locked=isLocked(m.idx,m.ko);
+  const official=officialResults[m.idx];
+  const pts=calcPoints(pred,official);
+  const glIdx=GL.indexOf(m.gl);
+  const color=GC[glIdx];
+  const sA=pred&&pred.scoreA!==null&&pred.scoreA!==undefined?pred.scoreA:'';
+  const sB=pred&&pred.scoreB!==null&&pred.scoreB!==undefined?pred.scoreB:'';
+  let aClass='',bClass='';
+  if(pred&&sA!==''&&sB!==''){if(Number(sA)>Number(sB)){aClass='w';bClass='lo';}else if(Number(sB)>Number(sA)){bClass='w';aClass='lo';}}
+
+  let centerHtml='';
+  if(locked&&!pred){
+    // Show match but with disabled inputs — player missed the window
+    centerHtml=`<div class="pred-score-row">
+      <div class="pred-box" style="opacity:.4;pointer-events:none">
+        <input class="pred-input" type="number" placeholder="–" disabled>
+        <span class="pred-sep">:</span>
+        <input class="pred-input" type="number" placeholder="–" disabled>
+      </div>
+    </div>
+    <div class="locked-badge">🔒 Locked — no prediction</div>`;
+  } else if(locked&&pred){
+    centerHtml=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--ac);letter-spacing:1px">${sA} : ${sB}</div>`;
+    if(pts!==null) centerHtml+=`<div class="result-feedback ${pts===3?'exact':pts===1?'correct':'wrong'}">${pts===3?'⭐ 3pts':pts===1?'✓ 1pt':'✗ 0pts'}</div>`;
+    else centerHtml+=`<div style="font-size:10px;color:var(--mu)">🔒 Submitted</div>`;
+  } else {
+    centerHtml=`<div class="pred-score-row">
+      <div class="pred-box${sA!==''&&sB!==''&&Number(sA)===Number(sB)?' is-draw':''}">
+        <input class="pred-input" id="p-${m.idx}-a" type="number" min="0" max="99" value="${sA}" placeholder="–" oninput="updateGroupPred(${m.idx})">
+        <span class="pred-sep">:</span>
+        <input class="pred-input" id="p-${m.idx}-b" type="number" min="0" max="99" value="${sB}" placeholder="–" oninput="updateGroupPred(${m.idx})">
+        <button class="pred-clear" onclick="clearGroupPred(${m.idx})">✕</button>
+      </div>
+    </div>`;
+    if(pred&&pred.scoreA!==null){centerHtml+=`<div class="submitted-badge">✓ saved</div>`;}
+    centerHtml+=`<div class="lock-info">${lockoutLabel(m.idx,m.ko)}</div>`;
+  }
+
+  return `<div class="match-card${locked?' locked':pred?' predicted':''}" id="pc-g-${m.idx}">
+    <div class="match-card-inner">
+      <div class="m-time"><div class="t">${m.sgt.display}</div><div class="s">Group Stage</div><div class="g" style="color:${color}">Grp ${m.gl}</div></div>
+      <div class="m-team l ${aClass}"><span class="tn">${m.nA}</span><span class="fl">${m.fA}</span></div>
+      <div class="pred-area">${centerHtml}</div>
+      <div class="m-team r ${bClass}"><span class="fl">${m.fB}</span><span class="tn">${m.nB}</span></div>
+      <div class="m-venue">${m.v}</div>
+    </div>
+  </div>`;
+}
+
+function renderKOPredRow(m,myPreds){
+  const pred=myPreds[m.id];
+  const locked=isLocked(m.id,m.ko);
+  const official=officialResults[m.id];
+  const pts=calcPoints(pred,official);
+  const dA=m.isTP?(getKOLoser2(m.src?.[0])):m.tA;
+  const dB=m.isTP?(getKOLoser2(m.src?.[1])):m.tB;
+  const nA=dA?dA.name:m.lA,fA=dA?dA.flag:'',nB=dB?dB.name:m.lB,fB=dB?dB.flag:'';
+  const isTbd=!dA||!dB;
+  const sA=pred&&pred.scoreA!==null&&pred.scoreA!==undefined?pred.scoreA:'';
+  const sB=pred&&pred.scoreB!==null&&pred.scoreB!==undefined?pred.scoreB:'';
+  const isDraw=sA!==''&&sB!==''&&Number(sA)===Number(sB);
+  const pW=pred?.winner;
+  const rl={R32:'R32',R16:'R16',QF:'QF',SF:'SF','3RD':'3rd Place',FIN:'🏆 Final'};
+  const rc={R32:'#f59e0b',R16:'#f97316',QF:'#ef4444',SF:'#a855f7','3RD':'#6366f1',FIN:'#fbbf24'};
+  let aClass='',bClass='';
+  if(pred&&sA!==''&&sB!==''&&Number(sA)!==Number(sB)){if(Number(sA)>Number(sB)){aClass='w';bClass='lo';}else{bClass='w';aClass='lo';}}
+  if(pW){aClass=pW.name===nA?'w':'lo';bClass=pW.name===nB?'w':'lo';}
+
+  let centerHtml='';
+  if(isTbd){
+    centerHtml=`<div style="font-size:11px;color:var(--mu);font-style:italic;text-align:center">Teams TBD</div>`;
+  } else if(locked&&!pred){
+    centerHtml=`<div class="pred-score-row">
+      <div class="pred-box" style="opacity:.4;pointer-events:none">
+        <input class="pred-input ko-inp" type="number" placeholder="–" disabled>
+        <span class="pred-sep">:</span>
+        <input class="pred-input ko-inp" type="number" placeholder="–" disabled>
+      </div>
+    </div>
+    <div class="locked-badge">🔒 Locked — no prediction</div>`;
+  } else if(locked&&pred){
+    const scoreStr=sA!==''&&sB!==''?`${sA} : ${sB}`:'—';
+    centerHtml=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--ac2);letter-spacing:1px">${scoreStr}</div>`;
+    if(pW)centerHtml+=`<div style="font-size:10px;color:var(--win)">${pW.flag} ${pW.name} ${pred.via?'('+pred.via.toUpperCase()+')':''}</div>`;
+    if(pts!==null) centerHtml+=`<div class="result-feedback ${pts===3?'exact':pts===1?'correct':'wrong'}">${pts===3?'⭐ 3pts':pts===1?'✓ 1pt':'✗ 0pts'}</div>`;
+    else centerHtml+=`<div style="font-size:10px;color:var(--mu)">🔒 Submitted</div>`;
+  } else {
+    centerHtml=`<div class="pred-score-row">
+      <div class="pred-box${isDraw?' is-draw':''}">
+        <input class="pred-input ko-inp" id="kp-${m.id}-a" type="number" min="0" max="99" value="${sA}" placeholder="–" oninput="updateKOPred('${m.id}')">
+        <span class="pred-sep">:</span>
+        <input class="pred-input ko-inp" id="kp-${m.id}-b" type="number" min="0" max="99" value="${sB}" placeholder="–" oninput="updateKOPred('${m.id}')">
+        <button class="pred-clear" onclick="clearKOPred('${m.id}')">✕</button>
+      </div>
+    </div>`;
+    if(isDraw){
+      centerHtml+=`<div class="draw-prompt">DRAW — pick winner:</div>
+      <div class="et-btns">
+        <button class="et-btn${pW&&pW.name===nA&&pred?.via==='aet'?' chosen':''}" onclick="pickKOPredWinner('${m.id}','a','aet')">${fA} AET</button>
+        <button class="et-btn${pW&&pW.name===nA&&pred?.via==='pens'?' chosen':''}" onclick="pickKOPredWinner('${m.id}','a','pens')">${fA} Pen</button>
+        <button class="et-btn${pW&&pW.name===nB&&pred?.via==='aet'?' chosen':''}" onclick="pickKOPredWinner('${m.id}','b','aet')">AET ${fB}</button>
+        <button class="et-btn${pW&&pW.name===nB&&pred?.via==='pens'?' chosen':''}" onclick="pickKOPredWinner('${m.id}','b','pens')">Pen ${fB}</button>
+      </div>`;
+    } else if(pred&&pred.scoreA!==null){
+      centerHtml+=`<div class="submitted-badge">✓ saved</div>`;
+    }
+    centerHtml+=`<div class="lock-info">${lockoutLabel(m.id,m.ko)}</div>`;
+  }
+
+  return `<div class="match-card${locked?' locked':pred?' predicted':''}" id="pc-ko-${m.id}">
+    <div class="match-card-inner">
+      <div class="m-time"><div class="t">${m.sgt.display}</div><div class="s" style="color:${rc[m.r]||'var(--ac2)'}">${rl[m.r]||m.r}</div><div class="g" style="color:var(--mu);font-size:10px">#${m.n}</div></div>
+      <div class="m-team l ${aClass} ${!dA?'tbd':''}"><span class="tn">${nA}</span>${fA?`<span class="fl">${fA}</span>`:''}</div>
+      <div class="pred-area">${centerHtml}</div>
+      <div class="m-team r ${bClass} ${!dB?'tbd':''}">${fB?`<span class="fl">${fB}</span>`:''}<span class="tn">${nB}</span></div>
+      <div class="m-venue">${m.v}</div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// PREDICTION INPUT HANDLERS
+// ═══════════════════════════════════════════════════════
+async function updateGroupPred(idx){
+  if(!currentUser||isLocked(idx,GF_KO[idx])) return;
+  const eA=document.getElementById(`p-${idx}-a`),eB=document.getElementById(`p-${idx}-b`);
+  if(!eA||!eB) return;
+  const vA=eA.value.trim(),vB=eB.value.trim();
+  if(vA===''||vB===''){if(vA===''&&vB==='')deletePred(idx);return;}
+  const sA=parseInt(vA),sB=parseInt(vB);
+  if(isNaN(sA)||isNaN(sB)||sA<0||sB<0) return;
+  const un=currentUser.name.toLowerCase();
+  if(!allPredictions[un])allPredictions[un]={};
+  const winner=sA>sB?{name:GROUPS[GF[idx][0]].t[GF[idx][1]],flag:GROUPS[GF[idx][0]].f[GF[idx][1]]}:sB>sA?{name:GROUPS[GF[idx][0]].t[GF[idx][2]],flag:GROUPS[GF[idx][0]].f[GF[idx][2]]}:null;
+  const predObj={scoreA:sA,scoreB:sB,winner,via:null,ts:new Date().toISOString()};
+  allPredictions[un][idx]=predObj;
+  try{await api('savePrediction',{userName:un,matchKey:idx,...predObj,winner:predObj.winner||null});}catch(e){console.warn('save pred failed',e);}
+  document.querySelectorAll(`#pc-g-${idx} .submitted-badge`).forEach(el=>el.textContent='✓ saved');
+  renderLeaderboard();
+}
+
+async function clearGroupPred(idx){
+  deletePred(idx); const eA=document.getElementById(`p-${idx}-a`),eB=document.getElementById(`p-${idx}-b`);
+  if(eA)eA.value='';if(eB)eB.value='';
+}
+
+function deletePred(key){
+  if(!currentUser) return;
+  const un=currentUser.name.toLowerCase();
+  if(allPredictions[un])delete allPredictions[un][key];
+  savePredictions();
+}
+
+async function updateKOPred(id){
+  if(!currentUser||isLocked(id,KO_KO[id])) return;
+  const eA=document.getElementById(`kp-${id}-a`),eB=document.getElementById(`kp-${id}-b`);
+  if(!eA||!eB) return;
+  const vA=eA.value.trim(),vB=eB.value.trim();
+  if(vA===''||vB===''){if(vA===''&&vB==='')deletePred(id);return;}
+  const sA=parseInt(vA),sB=parseInt(vB);
+  if(isNaN(sA)||isNaN(sB)||sA<0||sB<0) return;
+  const un=currentUser.name.toLowerCase();
+  if(!allPredictions[un])allPredictions[un]={};
+  const{tA,tB}=resolveKO(id);
+  const prev=allPredictions[un][id]||{};
+  let winner=null,via=null;
+  if(sA!==sB){winner=sA>sB?tA:tB;via=null;}
+  else{winner=prev.winner||null;via=prev.via||null;}
+  const predObj={scoreA:sA,scoreB:sB,winner,via,ts:new Date().toISOString()};
+  allPredictions[un][id]=predObj;
+  try{await api('savePrediction',{userName:un,matchKey:id,...predObj,winner:predObj.winner||null});}catch(e){console.warn('save pred failed',e);}
+  renderPredictions();renderLeaderboard();
+}
+
+async function clearKOPred(id){
+  deletePred(id);
+  const eA=document.getElementById(`kp-${id}-a`),eB=document.getElementById(`kp-${id}-b`);
+  if(eA)eA.value='';if(eB)eB.value='';
+  renderPredictions();
+}
+
+async function pickKOPredWinner(id,side,via){
+  if(!currentUser||isLocked(id,KO_KO[id])) return;
+  const m=KO_MAP[id];
+  const{tA,tB}=resolveKO(id);
+  const team=side==='a'?tA:tB;
+  if(!team) return;
+  const un=currentUser.name.toLowerCase();
+  if(!allPredictions[un])allPredictions[un]={};
+  const prev=allPredictions[un][id]||{};
+  let newPred;
+  if(prev.winner&&prev.winner.name===team.name&&prev.via===via){
+    newPred={...prev,winner:null,via:null,ts:new Date().toISOString()};
+  } else {
+    newPred={...prev,winner:team,via,ts:new Date().toISOString()};
+  }
+  allPredictions[un][id]=newPred;
+  try{await api('savePrediction',{userName:un,matchKey:id,...newPred,winner:newPred.winner||null});}catch(e){console.warn('save pred failed',e);}
+  renderPredictions();renderLeaderboard();
+}
+
+// ═══════════════════════════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════════════════════════
+function computeLeaderboard(){
+  return Object.keys(users).map(ukey=>{
+    const preds=allPredictions[ukey]||{};
+    let exact=0,correct=0,wrong=0,total=0;
+    // Group matches
+    GF.forEach((_,idx)=>{
+      const or=officialResults[idx];if(!or||or.scoreA===null||or.scoreA===undefined) return;
+      const pr=preds[idx];if(!pr) return;
+      const pts=calcPoints(pr,or);
+      total++;if(pts===3)exact++;else if(pts===1)correct++;else wrong++;
+    });
+    // KO matches
+    KO.forEach(m=>{
+      const or=officialResults[m.id];if(!or||!or.winner) return;
+      const pr=preds[m.id];if(!pr) return;
+      const pts=calcPoints(pr,or);
+      total++;if(pts===3)exact++;else if(pts===1)correct++;else wrong++;
+    });
+    const points=exact*3+correct*1;
+    return{name:users[ukey].displayName||ukey,ukey,points,exact,correct,wrong,total};
+  }).sort((a,b)=>b.points-a.points||b.exact-a.exact||b.correct-a.correct);
+}
+
+function renderLeaderboard(){
+  const rows=computeLeaderboard();
+  const maxPts=rows[0]?.points||1;
+  const el=document.getElementById('leaderboard-content');
+  if(!rows.length){el.innerHTML='<div style="color:var(--mu);text-align:center;padding:40px">No players yet</div>';return;}
+
+  const legend=`<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;font-size:11px;color:var(--mu)">
+    <span><span style="color:#fbbf24;font-weight:700">⭐ 3pts</span> = Exact score</span>
+    <span><span style="color:var(--win);font-weight:700">✓ 1pt</span> = Correct result</span>
+    <span><span style="color:var(--ac3)">✗ 0pts</span> = Wrong</span>
+  </div>`;
+
+  const tableRows=rows.map((r,i)=>{
+    const rankClass=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const barW=maxPts>0?Math.round(r.points/maxPts*100):0;
+    const isMe=currentUser&&r.name.toLowerCase()===currentUser.name.toLowerCase();
+    return `<tr style="${isMe?'background:rgba(0,212,170,.05);':''}" >
+      <td><div class="lb-rank ${rankClass}">${i+1}</div></td>
+      <td class="l"><div class="lb-name">${isMe?'<span style="color:var(--ac);font-size:10px;font-weight:700">YOU</span>':''} ${r.name}</div>
+        <div class="lb-bar-wrap" style="width:100%;max-width:120px"><div class="lb-bar" style="width:${barW}%"></div></div>
+      </td>
+      <td><div class="lb-pts">${r.points}</div></td>
+      <td><div class="lb-exact">${r.exact}</div></td>
+      <td><div class="lb-correct">${r.correct}</div></td>
+      <td><div class="lb-wrong">${r.wrong}</div></td>
+      <td><div style="font-size:12px;color:var(--mu)">${r.total}</div></td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML=`${legend}<div style="background:var(--s);border:1px solid var(--b);border-radius:12px;overflow:hidden"><table class="lb-table">
+    <thead><tr><th class="l" style="width:40px">#</th><th class="l">Player</th><th>PTS</th><th>⭐</th><th>✓</th><th>✗</th><th>Played</th></tr></thead>
+    <tbody>${tableRows}</tbody>
+  </table></div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// GROUPS VIEW
+// ═══════════════════════════════════════════════════════
+function renderGroups(){
+  document.getElementById('groups-grid').innerHTML=GL.map((gl,gi)=>{
+    const s=getStandings(gl);
+    const played=groupFixtures[gl].filter(f=>{const sc=officialResults[f.idx];return sc&&sc.scoreA!==null&&sc.scoreA!==undefined;}).length;
+    return `<div class="gc"><div class="gh"><div class="gl2" style="color:${GC[gi]}">${gl}</div><div><div class="gt">Group ${gl}</div><div class="gs">${played}/${groupFixtures[gl].length} played</div></div></div>
+    <div class="standings"><div class="sth"><div class="sh l" style="grid-column:1/3">Team</div><div class="sh">P</div><div class="sh">GD</div><div class="sh">GF</div><div class="sh" style="color:var(--ac)">Pts</div></div>
+    ${s.map((t,si)=>`<div class="str ${si===0?'q1':si===1?'q2':si===2?'q3':''}"><div class="spos">${si+1}</div><div class="steam"><span style="font-size:13px">${t.flag}</span>${t.name}</div><div class="sn">${t.played}</div><div class="sn">${t.gd>0?'+':''}${t.gd}</div><div class="sn">${t.gf}</div><div class="sp">${t.pts}</div></div>`).join('')}
+    </div></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// KNOCKOUT BRACKET
+// ═══════════════════════════════════════════════════════
+function renderKnockout(){
+  const rounds=[{l:'Round of 32',ids:KO.filter(m=>m.r==='R32').map(m=>m.id)},{l:'Round of 16',ids:KO.filter(m=>m.r==='R16').map(m=>m.id)},{l:'Quarter-Finals',ids:KO.filter(m=>m.r==='QF').map(m=>m.id)},{l:'Semi-Finals',ids:KO.filter(m=>m.r==='SF').map(m=>m.id)},{l:'Final',ids:KO.filter(m=>m.r==='FIN').map(m=>m.id)}];
+  document.getElementById('bracket').innerHTML=rounds.map(round=>{
+    const matches=round.ids.map(id=>{
+      const m=KO_MAP[id];const res=officialResults[id];
+      let dA,dB;if(m.isTP){dA=getKOLoser2(m.src[0]);dB=getKOLoser2(m.src[1]);}else{const k=resolveKO(id);dA=k.tA;dB=k.tB;}
+      const nA=dA?dA.name:m.lA,fA=dA?dA.flag:'',nB=dB?dB.name:m.lB,fB=dB?dB.flag:'';
+      const wn=res?.winner?.name;const aW=wn&&dA&&wn===dA.name,bW=wn&&dB&&wn===dB.name;
+      const scA=res?.scoreA!==undefined&&res?.scoreA!==null?res.scoreA:'',scB=res?.scoreB!==undefined&&res?.scoreB!==null?res.scoreB:'';
+      const via=res?.via?(res.via==='aet'?'AET':'Pens'):'';
+      const mkT=(n,f,iW,iL,iT)=>`<div class="br-team ${iW?'winner':iL?'loser':iT?'tbd':''}" style="display:flex;align-items:center;justify-content:space-between">${f?`<span style="font-size:12px">${f}</span> `:''}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${n}</span>${iW&&scA!==''?`<span style="font-family:'Barlow Condensed',sans-serif;font-size:12px;color:var(--ac);flex-shrink:0;margin-left:4px">${iW&&wn===nA?scA:scB}</span>`:''}`;
+      return `<div class="br-match">${mkT(nA,fA,aW,bW&&res,!dA)}</div>${scA!==''||scB!==''?`<div class="br-score-bar"><span>${scA}:${scB}</span>${via?`<span style="color:var(--ac2);font-weight:700">${via}</span>`:''}</div>`:''}${mkT(nB,fB,bW,aW&&res,!dB)}</div>`;
+    }).join('');
+    return `<div class="br-round"><div class="rt">${round.l}</div><div class="br-matches">${matches}</div></div>`;
+  }).join('');
+  const finRes=officialResults['fin_0'];
+  const cb=document.getElementById('champ-box');
+  if(finRes?.winner){cb.classList.add('show');document.getElementById('champ-name').textContent=`${finRes.winner.flag} ${finRes.winner.name}`;}
+  else cb.classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════
+// ADMIN
+// ═══════════════════════════════════════════════════════
+function renderAdmin(){
+  if(!currentUser?.isAdmin) return;
+  // Players
+  const playerRows=Object.keys(users).map(ukey=>`<div class="user-chip"><span class="uname">${users[ukey].displayName||ukey}</span><button class="udel" onclick="adminDeleteUser('${ukey}')" title="Remove">✕</button></div>`).join('');
+  document.getElementById('admin-players').innerHTML=`<div class="user-list">${playerRows||'<div style="color:var(--mu);font-size:13px">No players yet</div>'}</div><div style="font-size:12px;color:var(--mu)">${Object.keys(users).length}/${config.maxPlayers} slots used</div>`;
+
+  // Official results input
+  const allMatches=[];
+  GF.forEach(([gl,ai,bi,et,v],idx)=>{
+    const g=GROUPS[gl];const sgt=utcMsToTZ(GF_KO[idx],userTz);
+    allMatches.push({type:'group',gl,ai,bi,v,sgt,idx,ko:GF_KO[idx],nA:g.t[ai],fA:g.f[ai],nB:g.t[bi],fB:g.f[bi]});
+  });
+  KO.forEach(m=>{
+    const sgt=utcMsToTZ(KO_KO[m.id],userTz);
+    allMatches.push({type:'ko',id:m.id,r:m.r,n:m.n,lA:m.lA,lB:m.lB,v:m.v,sgt,ko:KO_KO[m.id]});
+  });
+  allMatches.sort((a,b)=>a.ko-b.ko);
+
+  let resHtml='<div style="display:flex;flex-direction:column;gap:6px">';
+  allMatches.forEach(m=>{
+    const key=m.type==='group'?m.idx:m.id;
+    const or=officialResults[key];
+    const sA=or?.scoreA!==null&&or?.scoreA!==undefined?or.scoreA:'';
+    const sB=or?.scoreB!==null&&or?.scoreB!==undefined?or.scoreB:'';
+    const isDraw=sA!==''&&sB!==''&&Number(sA)===Number(sB);
+    const pW=or?.winner;
+    let label='';
+    if(m.type==='group'){
+      const g=GROUPS[m.gl];
+      label=`<span style="font-size:11px;color:${GC[GL.indexOf(m.gl)]};font-weight:700;margin-right:4px">Grp ${m.gl}</span>${m.fA} ${m.nA} vs ${m.fB} ${m.nB}`;
+    } else {
+      const{tA,tB}=resolveKO(m.id);
+      label=`<span style="font-size:11px;color:var(--ac2);font-weight:700;margin-right:4px">#${m.n}</span>${tA?tA.flag+' '+tA.name:m.lA} vs ${tB?tB.flag+' '+tB.name:m.lB}`;
+    }
+    let drawPicker='';
+    if(isDraw&&m.type==='ko'){
+      const{tA,tB}=resolveKO(m.id);
+      const nA=tA?tA.name:m.lA,fA=tA?tA.flag:'',nB=tB?tB.name:m.lB,fB=tB?tB.flag:'';
+      drawPicker=`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">
+        <button class="et-btn${pW?.name===nA&&or?.via==='aet'?' chosen':''}" onclick="adminPickWinner('${key}','a','aet')">${fA} AET</button>
+        <button class="et-btn${pW?.name===nA&&or?.via==='pens'?' chosen':''}" onclick="adminPickWinner('${key}','a','pens')">${fA} Pen</button>
+        <button class="et-btn${pW?.name===nB&&or?.via==='aet'?' chosen':''}" onclick="adminPickWinner('${key}','b','aet')">AET ${fB}</button>
+        <button class="et-btn${pW?.name===nB&&or?.via==='pens'?' chosen':''}" onclick="adminPickWinner('${key}','b','pens')">Pen ${fB}</button>
+      </div>`;
+    }
+    const lockoutVal=lockoutOverrides[key]!==undefined?lockoutOverrides[key]:config.lockoutMins;
+    resHtml+=`<div style="background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:8px 12px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:12px;flex:1">${label}</span>
+        <span style="font-size:11px;color:var(--mu)">${m.sgt.display}</span>
+        <div style="display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--b);border-radius:6px;padding:2px 8px">
+          <input style="width:28px;background:transparent;border:none;color:var(--ac2);font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;outline:none" type="number" min="0" max="99" id="ar-${key}-a" value="${sA}" placeholder="–" oninput="adminUpdateResult('${key}','${m.type}')">
+          <span style="color:var(--mu);font-family:'Barlow Condensed',sans-serif;font-size:16px">:</span>
+          <input style="width:28px;background:transparent;border:none;color:var(--ac2);font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;outline:none" type="number" min="0" max="99" id="ar-${key}-b" value="${sB}" placeholder="–" oninput="adminUpdateResult('${key}','${m.type}')">
+        </div>
+        <button class="btn-danger" style="font-size:10px;padding:4px 8px" onclick="adminClearResult('${key}')">Clear</button>
+        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--mu)">
+          <span>Lock:</span>
+          <input style="width:42px;background:var(--s2);border:1px solid var(--b);border-radius:5px;padding:3px 5px;color:var(--tx);font-size:11px;outline:none;text-align:center" type="number" id="lo-${key}" value="${lockoutVal}" step="1" onchange="adminUpdateLockout('${key}')">
+          <span>min</span>
+        </div>
+      </div>
+      ${drawPicker}
+    </div>`;
+  });
+  document.getElementById('admin-results-list').innerHTML=resHtml+'</div>';
+
+  // Show API URL
+  const apiDisp=document.getElementById('api-url-display');
+  if(apiDisp) apiDisp.textContent=API_URL||'(not set)';
+  // All predictions table
+  renderAdminPredictions();
+}
+
+async function adminDeleteUser(ukey){
+  if(!confirm(`Remove ${users[ukey]?.displayName||ukey}?`)) return;
+  delete users[ukey];
+  try{await api('deleteUser',{name:ukey});}catch(e){}
+  renderAdmin();
+}
+
+async function adminUpdateResult(key,type){
+  const eA=document.getElementById(`ar-${key}-a`),eB=document.getElementById(`ar-${key}-b`);
+  if(!eA||!eB) return;
+  const vA=eA.value.trim(),vB=eB.value.trim();
+  if(vA===''||vB==='') return;
+  const sA=parseInt(vA),sB=parseInt(vB);
+  if(isNaN(sA)||isNaN(sB)) return;
+  const prev=officialResults[key]||{};
+  let winner=null,via=prev.via||null;
+  if(type==='group'){
+    const gfRow=GF[key];const gl=gfRow[0],ai=gfRow[1],bi=gfRow[2];
+    const g=GROUPS[gl];
+    if(sA>sB)winner={name:g.t[ai],flag:g.f[ai]};
+    else if(sB>sA)winner={name:g.t[bi],flag:g.f[bi]};
+  } else {
+    if(sA!==sB){const{tA,tB}=resolveKO(key);winner=sA>sB?tA:tB;via=null;}
+    else{winner=prev.winner||null;}
+  }
+  const resObj={scoreA:sA,scoreB:sB,winner,via};
+  officialResults[key]=resObj;
+  try{await api('saveResult',{matchKey:key,...resObj,winner:resObj.winner||null});}catch(e){console.warn('save result failed',e);}
+  renderAdmin();renderLeaderboard();renderGroups();renderKnockout();
+}
+
+async function adminPickWinner(key,side,via){
+  const or=officialResults[key];if(!or) return;
+  const m=KO_MAP[key];if(!m) return;
+  const{tA,tB}=resolveKO(key);
+  const team=side==='a'?tA:tB;if(!team) return;
+  const updatedRes={...or,winner:team,via};
+  officialResults[key]=updatedRes;
+  try{await api('saveResult',{matchKey:key,...updatedRes,winner:team});}catch(e){console.warn('save pick failed',e);}
+  renderAdmin();renderLeaderboard();renderKnockout();
+}
+
+async function adminClearResult(key){
+  delete officialResults[key];
+  try{await api('saveResult',{matchKey:key,scoreA:null,scoreB:null,winner:null,via:null});}catch(e){}
+  renderAdmin();renderLeaderboard();renderGroups();renderKnockout();
+}
+
+async function adminUpdateLockout(key){
+  const el=document.getElementById(`lo-${key}`);
+  if(!el) return;
+  const offsetVal=parseFloat(el.value);
+  lockoutOverrides[key]=offsetVal;
+  try{await api('saveLockout',{matchKey:key,offsetMins:offsetVal});}catch(e){}
+  showToast('Lockout updated ✓');
+}
+
+function renderAdminPredictions(){
+  const allMatches=[];
+  GF.forEach(([gl,ai,bi,et,v],idx)=>{
+    const g=GROUPS[gl];
+    allMatches.push({key:idx,label:`${g.f[ai]}${g.t[ai]} vs ${g.f[bi]}${g.t[bi]} (Grp ${gl})`});
+  });
+  KO.forEach(m=>{
+    const{tA,tB}=resolveKO(m.id);
+    allMatches.push({key:m.id,label:`#${m.n} ${tA?tA.name:m.lA} vs ${tB?tB.name:m.lB}`});
+  });
+
+  const playerKeys=Object.keys(users);
+  if(!playerKeys.length){document.getElementById('admin-predictions').innerHTML='<div style="color:var(--mu);font-size:13px">No players</div>';return;}
+
+  let html=`<div style="overflow-x:auto"><table class="admin-predictions-table apt">
+    <thead><tr><th>Match</th>${playerKeys.map(uk=>`<th>${users[uk]?.displayName||uk}</th>`).join('')}</tr></thead><tbody>`;
+  allMatches.forEach(({key,label})=>{
+    const or=officialResults[key];
+    html+=`<tr><td style="font-size:11px;white-space:nowrap">${label}</td>`;
+    playerKeys.forEach(uk=>{
+      const pred=(allPredictions[uk]||{})[key];
+      if(!pred||pred.scoreA===null||pred.scoreA===undefined){html+=`<td style="color:var(--mu);font-size:11px">—</td>`;}
+      else{
+        const pts=calcPoints(pred,or);
+        const ptsBadge=pts===null?'':`<span style="font-size:9px;font-weight:700;margin-left:3px;color:${pts===3?'#fbbf24':pts===1?'var(--win)':'var(--ac3)'}">${pts===3?'⭐':pts===1?'✓':'✗'}</span>`;
+        const via=pred.via?` (${pred.via.toUpperCase()})` :'';
+        html+=`<td style="font-size:11px;white-space:nowrap">${pred.scoreA}:${pred.scoreB}${via}${ptsBadge}<br><span class="ts-label">${new Date(pred.ts).toLocaleString('en-SG',{timeZone:'Asia/Singapore',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span></td>`;
+      }
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  document.getElementById('admin-predictions').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════
+// CSV EXPORT
+// ═══════════════════════════════════════════════════════
+function exportCSV(){
+  const playerKeys=Object.keys(users);
+  let csv='Match,Date (SGT),Team A,Team B,Official Score';
+  playerKeys.forEach(uk=>{csv+=`,${users[uk]?.displayName||uk} Pred,${users[uk]?.displayName||uk} Pts,${users[uk]?.displayName||uk} Timestamp`;});
+  csv+='\n';
+
+  const allMatches=[];
+  GF.forEach(([gl,ai,bi,et,v],idx)=>{
+    const g=GROUPS[gl];const sgt=utcMsToTZ(GF_KO[idx],userTz);
+    allMatches.push({key:idx,label:`Grp ${gl}: ${g.t[ai]} vs ${g.t[bi]}`,date:sgt.date+' '+sgt.display,nA:g.t[ai],nB:g.t[bi],ko:GF_KO[idx]});
+  });
+  KO.forEach(m=>{
+    const sgt=utcMsToTZ(KO_KO[m.id],userTz);
+    const{tA,tB}=resolveKO(m.id);
+    allMatches.push({key:m.id,label:`#${m.n} ${tA?tA.name:m.lA} vs ${tB?tB.name:m.lB}`,date:sgt.date+' '+sgt.display,nA:tA?tA.name:m.lA,nB:tB?tB.name:m.lB,ko:KO_KO[m.id]});
+  });
+  allMatches.sort((a,b)=>a.ko-b.ko);
+
+  allMatches.forEach(({key,label,date,nA,nB})=>{
+    const or=officialResults[key];
+    const offScore=or?.scoreA!==undefined&&or?.scoreA!==null?`${or.scoreA}-${or.scoreB}`:'';
+    let row=`"${label}","${date}","${nA}","${nB}","${offScore}"`;
+    playerKeys.forEach(uk=>{
+      const pred=(allPredictions[uk]||{})[key];
+      if(!pred||pred.scoreA===null||pred.scoreA===undefined){row+=',"","",';}
+      else{
+        const pts=calcPoints(pred,or);
+        const via=pred.via?` (${pred.via.toUpperCase()})` :'';
+        const ts=pred.ts?new Date(pred.ts).toLocaleString('en-SG',{timeZone:'Asia/Singapore'}):'';
+        row+=`,"${pred.scoreA}-${pred.scoreB}${via}","${pts!==null?pts:''}","${ts}"`;
+      }
+    });
+    csv+=row+'\n';
+  });
+
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`WC2026_Predictions_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function showToast(msg){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ac);color:#000;padding:8px 20px;border-radius:20px;font-family:\'Barlow Condensed\',sans-serif;font-size:14px;font-weight:700;z-index:999;transition:opacity .3s;pointer-events:none';document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';clearTimeout(t._to);t._to=setTimeout(()=>t.style.opacity='0',2500);
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function show(id){document.getElementById(id)?.classList.remove('hide');}
+function hide(id){document.getElementById(id)?.classList.add('hide');}
+function showApiSetup(){
+  hide('overlay-login');hide('overlay-loading');hide('overlay-apierr');
+  const saved=localStorage.getItem('wc26_api_url')||API_URL;
+  if(saved) document.getElementById('api-url-input').value=saved;
+  show('overlay-apisetup');
+}
+async function saveApiUrl(){
+  const raw=document.getElementById('api-url-input').value.trim();
+  if(!raw||!raw.startsWith('https://')){showErr('apisetup-err','Please enter a valid https:// URL');return;}
+  // Clean URL — strip query string and trailing slashes
+  const url=raw.split('?')[0].replace(/\/+$/,'');
+  document.getElementById('api-url-input').value=url;
+  showLoadingOverlay('Testing connection…');
+  try{
+    API_URL=url;
+    localStorage.setItem('wc26_api_url',url);
+    const pong=await api('ping',{});
+    if(!pong||!pong.ok) throw new Error('Unexpected response from server');
+    hide('overlay-apisetup');
+    await loadAll();
+  }catch(e){
+    API_URL='';
+    hideLoadingOverlay();
+    let msg=e.message;
+    if(msg.includes('fetch')||msg.includes('Failed')||msg.includes('NetworkError')){
+      msg='Cannot reach the server. Make sure:\n• URL ends in /exec (not /dev)\n• Deployment access is set to "Anyone"\n• You are opening this page from GitHub Pages (https://), not a local file';
+    }
+    showErr('apisetup-err',msg);
+  }
+}
+function showLoadingOverlay(msg){
+  document.getElementById('loading-msg').textContent=msg||'Loading…';
+  show('overlay-loading');
+}
+function hideLoadingOverlay(){hide('overlay-loading');}
+function showErr(id,msg){const el=document.getElementById(id);if(el){el.textContent=msg;el.classList.remove('hide');}}
+function clearErr(id){const el=document.getElementById(id);if(el){el.textContent='';el.classList.add('hide');}}
+
+function switchView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab,.mtab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.tab,.mtab').forEach(el=>{
+    const map={predict:['predict','my pred'],leaderboard:['leaderboard','board'],groups:['group','table'],knockout:['knockout','bracket'],admin:['admin']};
+    const t=el.textContent.toLowerCase();
+    if((map[v]||[]).some(k=>t.includes(k)))el.classList.add('active');
+  });
+  if(v==='groups') renderGroups();
+  if(v==='knockout') renderKnockout();
+  if(v==='leaderboard') renderLeaderboard();
+  if(v==='admin') renderAdmin();
+}
+
+function render(){
+  if(!currentUser) return;
+  renderPredictions();
+  renderLeaderboard();
+  renderGroups();
+  renderKnockout();
+}
+
+// ═══════════════════════════════════════════════════════
+// TIMEZONE DROPDOWN
+// ═══════════════════════════════════════════════════════
+function initTzPicker(){
+  const list=document.getElementById('tz-list');
+  if(!list||list.dataset.built) return;
+  list.dataset.built='1';
+  TZ_LIST.forEach(({label,tz})=>{
+    const el=document.createElement('div');
+    el.className='tz-item';
+    el.dataset.tz=tz;
+    el.textContent=label;
+    list.appendChild(el);
+  });
+  list.addEventListener('click',function(e){
+    const item=e.target.closest('.tz-item');
+    if(item) selectTz(item.dataset.tz);
+  });
+  refreshTzHighlight();
+  refreshTzLabel();
+}
+function refreshTzHighlight(){
+  document.querySelectorAll('#tz-list .tz-item').forEach(el=>{
+    el.classList.toggle('selected',el.dataset.tz===userTz);
+  });
+}
+function refreshTzLabel(){
+  const entry=TZ_LIST.find(t=>t.tz===userTz);
+  const lbl=document.getElementById('tz-label');
+  if(lbl) lbl.textContent=entry?entry.label.split('–')[0].trim():userTz;
+}
+function openTzDropdown(){
+  document.getElementById('tz-dropdown').classList.add('open');
+  document.getElementById('tz-backdrop').classList.add('open');
+  const sel=document.querySelector('#tz-list .tz-item.selected');
+  if(sel) setTimeout(()=>sel.scrollIntoView({block:'nearest'}),20);
+}
+function closeTzDropdown(){
+  document.getElementById('tz-dropdown').classList.remove('open');
+  document.getElementById('tz-backdrop').classList.remove('open');
+}
+function toggleTzDropdown(e){
+  e.stopPropagation();
+  document.getElementById('tz-dropdown').classList.contains('open')?closeTzDropdown():openTzDropdown();
+}
+function selectTz(tz){
+  userTz=tz;
+  try{localStorage.setItem('wc26_tz',tz);}catch(e){}
+  closeTzDropdown();
+  refreshTzHighlight();
+  refreshTzLabel();
+  if(currentUser){
+    renderPredictions();
+    if(document.getElementById('view-admin').classList.contains('active')) renderAdmin();
+  }
+}
+function setUserTz(tz){selectTz(tz);}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+async function init(){
+  initTzPicker();
+  // If a URL is baked in, save it to localStorage for resilience
+  if(BAKED_IN_URL){
+    localStorage.setItem('wc26_api_url', BAKED_IN_URL);
+    API_URL = BAKED_IN_URL;
+  }
+  if(API_URL){
+    await loadAll();
+  } else {
+    // No baked-in URL and nothing in localStorage → show setup
+    showApiSetup();
+  }
+}
+init();
+</script>
+</body>
+</html>
