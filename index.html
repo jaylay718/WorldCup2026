@@ -771,7 +771,8 @@ GF.forEach(([gl,ai,bi,et,v],idx)=>groupFixtures[gl].push({idx,gl,ai,bi,et,v}));
 
 function getStandings(gl){
   const g=GROUPS[gl];
-  const s=g.t.map((t,i)=>({idx:i,name:t,flag:g.f[i],pts:0,gd:0,gf:0,ga:0,played:0}));
+  if(!g||!g.t) return [{idx:0,name:'?',flag:'',pts:0,gd:0,gf:0,ga:0,played:0},{idx:1,name:'?',flag:'',pts:0,gd:0,gf:0,ga:0,played:0},{idx:2,name:'?',flag:'',pts:0,gd:0,gf:0,ga:0,played:0},{idx:3,name:'?',flag:'',pts:0,gd:0,gf:0,ga:0,played:0}];
+  const s=g.t.map((tm,i)=>({idx:i,name:tm,flag:g.f[i],pts:0,gd:0,gf:0,ga:0,played:0}));
   groupFixtures[gl].forEach(({idx,ai,bi})=>{
     const sc=officialResults[idx];
     if(!sc||sc.scoreA===null||sc.scoreA===undefined) return;
@@ -784,9 +785,26 @@ function getStandings(gl){
   s.sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf);
   return s;
 }
-function getAllThirds(){return GL.map(gl=>{const s=getStandings(gl);return{...s[2],gl};}).sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf);}
-function resolveSlot(slot){if(!slot)return null;const s=getStandings(slot.g);if(slot.t==='w')return{name:s[0].name,flag:s[0].flag};if(slot.t==='r')return{name:s[1].name,flag:s[1].flag};if(slot.t==='3'){const t=getAllThirds()[slot.s];return t?{name:t.name,flag:t.flag}:null;}return null;}
-function resolveKO(id){const m=KO_MAP[id];if(!m)return{tA:null,tB:null};let tA=null,tB=null;if(m.sA)tA=resolveSlot(m.sA);else if(m.src){const r=officialResults[m.src[0]];tA=r?r.winner:null;}if(m.sB)tB=resolveSlot(m.sB);else if(m.src){const r=officialResults[m.src[1]];tB=r?r.winner:null;}return{tA,tB};}
+function getAllThirds(){return GL.map(gl=>{const s=getStandings(gl);const t=s[2]||{name:'?',flag:'',pts:0,gd:0,gf:0};return{...t,gl};}).sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf);}
+function resolveSlot(slot){
+  if(!slot) return null;
+  const stype=slot.t||slot.type;
+  if(!slot.g&&stype!=='3') return null;
+  if(stype==='w'){const st=getStandings(slot.g);return st&&st[0]?{name:st[0].name,flag:st[0].flag}:null;}
+  if(stype==='r'){const st=getStandings(slot.g);return st&&st[1]?{name:st[1].name,flag:st[1].flag}:null;}
+  if(stype==='3'){const thirds=getAllThirds();const th=thirds[slot.s];return th?{name:th.name,flag:th.flag}:null;}
+  return null;
+}
+function resolveKO(id){
+  const m=KO_MAP[id];
+  if(!m) return{tA:null,tB:null};
+  let tA=null,tB=null;
+  if(m.sA) tA=resolveSlot(m.sA);
+  else if(m.src){const r=officialResults[m.src[0]];tA=(r&&r.winner&&r.winner.name)?r.winner:null;}
+  if(m.sB) tB=resolveSlot(m.sB);
+  else if(m.src){const r=officialResults[m.src[1]];tB=(r&&r.winner&&r.winner.name)?r.winner:null;}
+  return{tA,tB};
+}
 function getKOLoser(id){const r=officialResults[id];if(!r||!r.winner)return null;const m=KO_MAP[id];let tA,tB;if(m.isTP){tA=getKOLoser2(m.src[0]);tB=getKOLoser2(m.src[1]);}else{const k=resolveKO(id);tA=k.tA;tB=k.tB;}if(!tA||!tB)return null;return r.winner.name===tA.name?tB:tA;}
 function getKOLoser2(id){const r=officialResults[id];if(!r||!r.winner)return null;const k=resolveKO(id);if(!k.tA||!k.tB)return null;return r.winner.name===k.tA.name?k.tB:k.tA;}
 
@@ -802,8 +820,10 @@ function renderPredictions(){
 
   const all=[];
   GF.forEach(([gl,ai,bi,et,v],idx)=>{
-    const g=GROUPS[gl];const sgt=utcMsToTZ(GF_KO[idx],userTz);
-    all.push({type:'group',gl,ai,bi,v,sgt,idx,ko:GF_KO[idx],nA:g.t[ai],fA:g.f[ai],nB:g.t[bi],fB:g.f[bi]});
+    const g=GROUPS[gl];
+    if(!g||!g.t) return;
+    const sgt=utcMsToTZ(GF_KO[idx],userTz);
+    all.push({type:'group',gl,ai,bi,v,sgt,idx,ko:GF_KO[idx],nA:g.t[ai]||'?',fA:g.f[ai]||'',nB:g.t[bi]||'?',fB:g.f[bi]||''});
   });
   KO.forEach(m=>{
     const sgt=utcMsToTZ(KO_KO[m.id],userTz);
