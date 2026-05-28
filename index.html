@@ -464,26 +464,37 @@ const GC=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f97316',
 // ET = UTC-4 in summer (EDT). All stored times are EDT.
 function etToUtcMs(s){const[d,t]=s.split(' ');const[Y,M,D]=d.split('-').map(Number);const[h,m]=t.split(':').map(Number);return Date.UTC(Y,M-1,D,h+4,m);}
 
-// Rock-solid UTC-ms → display strings in any IANA timezone
-// Uses Intl.DateTimeFormat parts — no locale-dependent string parsing
+// Convert UTC ms to display strings in any IANA timezone
+// Uses toLocaleString offset trick — works in all browsers
 function utcMsToTZ(ms,tz){
-  const d=new Date(ms);
-  // Get individual date/time parts in the target timezone
-  const fmt=(opts)=>new Intl.DateTimeFormat('en-US',{timeZone:tz,...opts});
-  const parts=fmt({year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:true}).formatToParts(d);
-  const get=(t)=>(parts.find(p=>p.type===t)||{value:''}).value;
-  const yr=get('year'),mo=get('month'),dy=get('day');
-  const hr=get('hour'),mn=get('minute'),ampm=get('dayPeriod')||get('hour12');
-  // dayKey as YYYY-MM-DD for reliable sorting
-  const dayKey=`${yr}-${mo}-${dy}`;
-  // Friendly date label
-  const weekday=fmt({weekday:'short'}).format(d);
-  const monthName=fmt({month:'short'}).format(d);
-  const dayNum=fmt({day:'numeric'}).format(d);
-  const dateStr=`${weekday}, ${monthName} ${dayNum}`;
-  // Time display
-  const display=fmt({hour:'numeric',minute:'2-digit',hour12:true}).format(d);
-  return{display,date:dateStr,dayKey};
+  try{
+    const d=new Date(ms);
+    const tzDate=new Date(d.toLocaleString('en-US',{timeZone:tz}));
+    const yr=tzDate.getFullYear();
+    const mo=String(tzDate.getMonth()+1).padStart(2,'0');
+    const dy=String(tzDate.getDate()).padStart(2,'0');
+    const dayKey=yr+'-'+mo+'-'+dy;
+    const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const dateStr=days[tzDate.getDay()]+', '+months[tzDate.getMonth()]+' '+tzDate.getDate();
+    let h=tzDate.getHours();
+    const ampm=h>=12?'PM':'AM';
+    h=h%12||12;
+    const display=h+':'+String(tzDate.getMinutes()).padStart(2,'0')+' '+ampm;
+    return{display,date:dateStr,dayKey};
+  }catch(e){
+    const d=new Date(ms);
+    const yr=d.getUTCFullYear();
+    const mo=String(d.getUTCMonth()+1).padStart(2,'0');
+    const dy=String(d.getUTCDate()).padStart(2,'0');
+    const dayKey=yr+'-'+mo+'-'+dy;
+    const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const dateStr=days[d.getUTCDay()]+', '+months[d.getUTCMonth()]+' '+d.getUTCDate();
+    let h=d.getUTCHours(); const ampm=h>=12?'PM':'AM'; h=h%12||12;
+    const display=h+':'+String(d.getUTCMinutes()).padStart(2,'0')+' '+ampm;
+    return{display,date:dateStr,dayKey};
+  }
 }
 
 // Keep backward compat alias
