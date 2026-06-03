@@ -1728,8 +1728,7 @@ function exportCSV(){
   const playerKeys=Object.keys(users);
   let csv='Match,Date (SGT),Team A,Team B,Official Score';
   playerKeys.forEach(uk=>{csv+=','+( users[uk]?.displayName||uk)+' Pred,'+(users[uk]?.displayName||uk)+' Pts,'+(users[uk]?.displayName||uk)+' Timestamp';});
-  csv+='
-';
+  csv+='\n';
   const allMatches=[];
   GF.forEach(([gl,ai,bi],idx)=>{
     const g=GROUPS[gl];if(!g)return;
@@ -1761,8 +1760,7 @@ function exportCSV(){
         row+=',"'+pred.scoreA+'-'+pred.scoreB+via+'","'+(pts!=null?pts:'')+'","'+ts+'"';
       }
     });
-    csv+=row+'
-';
+    csv+=row+'\n';
   });
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
