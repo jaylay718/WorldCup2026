@@ -742,6 +742,7 @@ function onLoggedIn(){
     document.getElementById('admin-badge').classList.remove('hide');
     document.getElementById('cfg-max-players').value=config.maxPlayers;
     document.getElementById('cfg-lockout').value=config.lockoutMins;
+    loadTestModeState();
   }
   // Ensure the predict view is active and visible before rendering into it
   switchView('predict');
@@ -911,7 +912,10 @@ function renderPredictions(){
     const{label,matches}=byDay[dk];
     html+=`<div class="day-block"><div class="day-hdr">${label}<span class="day-cnt">${matches.length}</span></div>`;
     matches.forEach(m=>{
-      try{html+=m.type==='group'?renderGroupPredRow(m,myPreds):renderKOPredRow(m,myPreds);}
+      try{
+        if(m.type==='test') html+=renderTestPredRow(m,myPreds);
+        else html+=m.type==='group'?renderGroupPredRow(m,myPreds):renderKOPredRow(m,myPreds);
+      }
       catch(e){html+=`<div style="color:var(--ac3);font-size:11px;padding:6px">Error rendering match: ${e.message}</div>`;}
     });
     html+='</div>';
@@ -923,6 +927,126 @@ function renderPredictions(){
   const doneKO=KO.reduce((acc,m)=>{const p=myPreds[m.id];return acc+(p&&p.scoreA!==null&&p.scoreA!==undefined?1:0);},0);
   document.getElementById('pred-prog-fill').style.width=(doneG/GF.length*100)+'%';
   document.getElementById('pred-prog-text').textContent=`${doneG}/${GF.length} group · ${doneKO}/${KO.length} knockout`;
+}
+
+// ── Test match prediction row ────────────────────────────────
+function renderTestPredRow(m,myPreds){
+  const pred=myPreds[m.id];
+  const koMs=sgtStringToUtcMs(testMatches.find(t=>t.id===m.id)?.kickoffSGT||'');
+  const locked=koMs?isLocked(m.id,koMs):false;
+  const official=officialResults[m.id];
+  const pts=calcPoints(pred,official);
+  const sA=pred&&pred.scoreA!=null?pred.scoreA:'';
+  const sB=pred&&pred.scoreB!=null?pred.scoreB:'';
+  const isDraw=sA!==''&&sB!==''&&Number(sA)===Number(sB);
+  const pW=pred?.winner;
+  let aClass='',bClass='';
+  if(pred&&sA!==''&&sB!==''){
+    if(Number(sA)>Number(sB)){aClass='w';bClass='lo';}
+    else if(Number(sB)>Number(sA)){bClass='w';aClass='lo';}
+  }
+  if(pW){aClass=pW.name===m.nA?'w':'lo';bClass=pW.name===m.nB?'w':'lo';}
+
+  const renderFlag=f=>f?f.length<=3
+    ?`<span style="font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;background:var(--b);border-radius:3px;padding:1px 4px;flex-shrink:0">${f}</span>`
+    :`<span class="fl" style="font-size:18px">${f}</span>`:'';
+
+  let centerHtml='';
+  if(locked&&!pred){
+    centerHtml=`<div class="pred-score-row"><div class="pred-box" style="opacity:.4;pointer-events:none">
+      <input class="pred-input" type="number" placeholder="–" disabled>
+      <span class="pred-sep">:</span>
+      <input class="pred-input" type="number" placeholder="–" disabled>
+    </div></div><div class="locked-badge">🔒 Locked</div>`;
+  } else if(locked&&pred){
+    centerHtml=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--ac);letter-spacing:1px">${sA} : ${sB}</div>`;
+    if(pW) centerHtml+=`<div style="font-size:10px;color:var(--win)">${pW.flag||''} ${pW.name}${pred.via?' ('+pred.via.toUpperCase()+')':''}</div>`;
+    if(pts!==null) centerHtml+=`<div class="result-feedback ${pts===3?'exact':pts===1?'correct':'wrong'}">${pts===3?'⭐ 3pts':pts===1?'✓ 1pt':'✗ 0pts'}</div>`;
+    else centerHtml+=`<div style="font-size:10px;color:var(--mu)">🔒 Submitted</div>`;
+  } else {
+    centerHtml=`<div class="pred-score-row">
+      <div class="pred-box${isDraw?' is-draw':''}">
+        <input class="pred-input ko-inp" id="tp-${m.id}-a" type="number" min="0" max="99" value="${sA}" placeholder="–" oninput="updateTestPred('${m.id}')">
+        <span class="pred-sep">:</span>
+        <input class="pred-input ko-inp" id="tp-${m.id}-b" type="number" min="0" max="99" value="${sB}" placeholder="–" oninput="updateTestPred('${m.id}')">
+        <button class="pred-clear" onclick="clearTestPred('${m.id}')">✕</button>
+      </div>
+    </div>`;
+    if(isDraw){
+      centerHtml+=`<div class="draw-prompt">DRAW — pick winner:</div>
+      <div class="et-btns">
+        <button class="et-btn${pW?.name===m.nA&&pred?.via==='aet'?' chosen':''}" onclick="pickTestPredWinner('${m.id}','a','aet')">${m.fA||''} AET</button>
+        <button class="et-btn${pW?.name===m.nA&&pred?.via==='pens'?' chosen':''}" onclick="pickTestPredWinner('${m.id}','a','pens')">${m.fA||''} Pen</button>
+        <button class="et-btn${pW?.name===m.nB&&pred?.via==='aet'?' chosen':''}" onclick="pickTestPredWinner('${m.id}','b','aet')">AET ${m.fB||''}</button>
+        <button class="et-btn${pW?.name===m.nB&&pred?.via==='pens'?' chosen':''}" onclick="pickTestPredWinner('${m.id}','b','pens')">Pen ${m.fB||''}</button>
+      </div>`;
+    } else if(pred&&pred.scoreA!=null){
+      centerHtml+=`<div class="submitted-badge">✓ saved</div>`;
+    }
+    if(koMs) centerHtml+=`<div class="lock-info">${lockoutLabel(m.id,koMs)}</div>`;
+  }
+
+  return `<div class="match-card${locked?' locked':pred?' predicted':''}" style="border-left:3px solid rgba(168,85,247,.6)">
+    <div class="match-card-inner">
+      <div class="m-time">
+        <div class="t">${m.sgt.display}</div>
+        <div class="s" style="color:#a855f7">Test Match</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;background:rgba(168,85,247,.2);border:1px solid rgba(168,85,247,.4);color:#a855f7;border-radius:3px;padding:1px 5px;text-transform:uppercase;text-align:center;margin-top:2px">TEST</div>
+      </div>
+      <div class="m-team l ${aClass}"><span class="tn">${m.nA}</span>${renderFlag(m.fA)}</div>
+      <div class="pred-area">${centerHtml}</div>
+      <div class="m-team r ${bClass}">${renderFlag(m.fB)}<span class="tn">${m.nB}</span></div>
+      <div class="m-venue">${m.v||''}</div>
+    </div>
+  </div>`;
+}
+
+async function updateTestPred(id){
+  if(!currentUser)return;
+  const tm=testMatches.find(t=>t.id===id);if(!tm)return;
+  const koMs=sgtStringToUtcMs(tm.kickoffSGT);
+  if(koMs&&isLocked(id,koMs))return;
+  const eA=document.getElementById('tp-'+id+'-a');
+  const eB=document.getElementById('tp-'+id+'-b');
+  if(!eA||!eB)return;
+  const vA=eA.value.trim(),vB=eB.value.trim();
+  if(vA===''||vB==='')return;
+  const sA=parseInt(vA),sB=parseInt(vB);
+  if(isNaN(sA)||isNaN(sB)||sA<0||sB<0)return;
+  const un=currentUser.name.toLowerCase();
+  if(!allPredictions[un])allPredictions[un]={};
+  let winner=null;
+  if(sA>sB)winner={name:tm.nA,flag:tm.fA};
+  else if(sB>sA)winner={name:tm.nB,flag:tm.fB};
+  const predObj={scoreA:sA,scoreB:sB,winner,via:null,ts:new Date().toISOString()};
+  allPredictions[un][id]=predObj;
+  try{await api('savePrediction',{userName:un,matchKey:id,...predObj,winner:predObj.winner||null});}catch(e){console.warn(e);}
+  renderPredictions();renderLeaderboard();
+}
+
+async function clearTestPred(id){
+  if(!currentUser)return;
+  const un=currentUser.name.toLowerCase();
+  if(allPredictions[un])delete allPredictions[un][id];
+  try{await api('savePrediction',{userName:un,matchKey:id,scoreA:null,scoreB:null,winner:null,via:null,ts:new Date().toISOString()});}catch(e){}
+  renderPredictions();
+}
+
+async function pickTestPredWinner(id,side,via){
+  if(!currentUser)return;
+  const tm=testMatches.find(t=>t.id===id);if(!tm)return;
+  const koMs=sgtStringToUtcMs(tm.kickoffSGT);
+  if(koMs&&isLocked(id,koMs))return;
+  const team=side==='a'?{name:tm.nA,flag:tm.fA}:{name:tm.nB,flag:tm.fB};
+  const un=currentUser.name.toLowerCase();
+  if(!allPredictions[un])allPredictions[un]={};
+  const prev=allPredictions[un][id]||{};
+  const newPred=prev.winner?.name===team.name&&prev.via===via
+    ?{...prev,winner:null,via:null,ts:new Date().toISOString()}
+    :{...prev,winner:team,via,ts:new Date().toISOString()};
+  allPredictions[un][id]=newPred;
+  try{await api('savePrediction',{userName:un,matchKey:id,...newPred,winner:newPred.winner||null});}catch(e){console.warn(e);}
+  renderPredictions();renderLeaderboard();
 }
 
 function renderGroupPredRow(m,myPreds){
@@ -1292,6 +1416,338 @@ function renderKnockout(){
   else cb.classList.remove('show');
 }
 
+
+// ── TEST MODE ADMIN FUNCTIONS ────────────────────────────────
+function toggleTestMode(on){
+  testModeOn=on;
+  const editor=document.getElementById('test-matches-editor');
+  const section=document.getElementById('test-mode-section');
+  if(editor)editor.style.display=on?'block':'none';
+  if(section)section.classList.toggle('test-mode-on',on);
+  if(on)renderTestMatchCards();
+  try{localStorage.setItem('wc26_testmode',on?'1':'0');}catch(e){}
+  renderPredictions();
+  if(document.getElementById('view-results').classList.contains('active'))renderResults();
+}
+
+function renderTestMatchCards(){
+  const container=document.getElementById('test-match-cards');
+  if(!container)return;
+  const now=new Date();
+  now.setMinutes(now.getMinutes()+30);
+  const pad=n=>String(n).padStart(2,'0');
+  // Get SGT time for default
+  const sgtMs=now.getTime()+((8*60+now.getTimezoneOffset())*60000);
+  const sgtNow=new Date(sgtMs);
+  const defaultTime=sgtNow.getFullYear()+'-'+pad(sgtNow.getMonth()+1)+'-'+pad(sgtNow.getDate())+' '+pad(sgtNow.getHours())+':'+pad(sgtNow.getMinutes());
+  container.innerHTML=testMatches.map((tm,i)=>`
+    <div class="test-match-card">
+      <div class="test-match-header">🧪 Test Match ${i+1} <span class="test-badge">ID: ${tm.id}</span></div>
+      <div class="tm-row">
+        <div><div class="test-input-label">Team A Name</div><input class="test-input" id="tm-${i}-nA" value="${tm.nA}" placeholder="Team Alpha"></div>
+        <div><div class="test-input-label">Team A Flag/Icon</div><input class="test-input" id="tm-${i}-fA" value="${tm.fA}" placeholder="🔴 or text"></div>
+      </div>
+      <div class="tm-row">
+        <div><div class="test-input-label">Team B Name</div><input class="test-input" id="tm-${i}-nB" value="${tm.nB}" placeholder="Team Beta"></div>
+        <div><div class="test-input-label">Team B Flag/Icon</div><input class="test-input" id="tm-${i}-fB" value="${tm.fB}" placeholder="🔵 or text"></div>
+      </div>
+      <div class="tm-row3">
+        <div><div class="test-input-label">Kickoff (SGT) YYYY-MM-DD HH:MM</div><input class="test-input" id="tm-${i}-time" value="${tm.kickoffSGT||defaultTime}" placeholder="${defaultTime}"></div>
+        <div><div class="test-input-label">Lockout (mins before KO)</div><input class="test-input" id="tm-${i}-lock" type="number" value="${tm.lockoutMins}" step="1"></div>
+        <div><div class="test-input-label">Venue</div><input class="test-input" id="tm-${i}-venue" value="${tm.venue}" placeholder="Test Stadium"></div>
+      </div>
+    </div>`).join('');
+}
+
+function saveTestMatches(){
+  testMatches=testMatches.map((tm,i)=>({
+    id:tm.id,
+    nA:(document.getElementById('tm-'+i+'-nA')?.value||tm.nA).trim(),
+    fA:(document.getElementById('tm-'+i+'-fA')?.value||tm.fA).trim(),
+    nB:(document.getElementById('tm-'+i+'-nB')?.value||tm.nB).trim(),
+    fB:(document.getElementById('tm-'+i+'-fB')?.value||tm.fB).trim(),
+    kickoffSGT:(document.getElementById('tm-'+i+'-time')?.value||tm.kickoffSGT).trim(),
+    lockoutMins:parseFloat(document.getElementById('tm-'+i+'-lock')?.value||tm.lockoutMins)||1,
+    venue:(document.getElementById('tm-'+i+'-venue')?.value||tm.venue).trim(),
+  }));
+  testMatches.forEach(tm=>{lockoutOverrides[tm.id]=tm.lockoutMins;});
+  try{localStorage.setItem('wc26_testmatches',JSON.stringify(testMatches));}catch(e){}
+  showToast('Test matches saved ✓');
+  renderPredictions();
+  if(document.getElementById('view-results').classList.contains('active'))renderResults();
+}
+
+function loadTestModeState(){
+  try{
+    const on=localStorage.getItem('wc26_testmode');
+    if(on==='1'){
+      testModeOn=true;
+      const toggle=document.getElementById('test-mode-toggle');
+      if(toggle)toggle.checked=true;
+      const editor=document.getElementById('test-matches-editor');
+      if(editor)editor.style.display='block';
+      const section=document.getElementById('test-mode-section');
+      if(section)section.classList.add('test-mode-on');
+    }
+    const saved=localStorage.getItem('wc26_testmatches');
+    if(saved){
+      const parsed=JSON.parse(saved);
+      testMatches=testMatches.map((tm,i)=>parsed[i]?{...tm,...parsed[i]}:tm);
+      testMatches.forEach(tm=>{lockoutOverrides[tm.id]=tm.lockoutMins;});
+    }
+  }catch(e){}
+}
+
+// ── renderAdmin ───────────────────────────────────────────────
+function renderAdmin(){
+  if(!currentUser?.isAdmin)return;
+
+  // Players list
+  const playerRows=Object.keys(users).map(ukey=>`<div class="user-chip">
+    <span class="uname">${users[ukey]?.displayName||ukey}</span>
+    <button class="udel" onclick="adminDeleteUser('${ukey}')" title="Remove">✕</button>
+  </div>`).join('');
+  const playersEl=document.getElementById('admin-players');
+  if(playersEl)playersEl.innerHTML=`<div class="user-list">${playerRows||'<div style="color:var(--mu);font-size:13px">No players yet</div>'}</div>
+    <div style="font-size:12px;color:var(--mu)">${Object.keys(users).length}/${config.maxPlayers} slots used</div>`;
+
+  // API URL display
+  const apiDisp=document.getElementById('api-url-display');
+  if(apiDisp)apiDisp.textContent=API_URL||'(not set)';
+
+  // Settings
+  const cfgMax=document.getElementById('cfg-max-players');
+  const cfgLock=document.getElementById('cfg-lockout');
+  if(cfgMax)cfgMax.value=config.maxPlayers;
+  if(cfgLock)cfgLock.value=config.lockoutMins;
+
+  // Official results list
+  const allMatches=[];
+  GF.forEach(([gl,ai,bi,et,v],idx)=>{
+    const g=GROUPS[gl];if(!g||!g.t)return;
+    const sgt=utcMsToTZ(GF_KO[idx],userTz);
+    allMatches.push({type:'group',gl,idx,ko:GF_KO[idx],sgt,v,
+      nA:g.t[ai],fA:g.f[ai],nB:g.t[bi],fB:g.f[bi]});
+  });
+  KO.forEach(m=>{
+    const sgt=utcMsToTZ(KO_KO[m.id],userTz);
+    allMatches.push({type:'ko',id:m.id,r:m.r,n:m.n,lA:m.lA,lB:m.lB,v:m.v,sgt,ko:KO_KO[m.id]});
+  });
+  if(testModeOn){
+    testMatches.forEach(tm=>{
+      if(!tm.kickoffSGT)return;
+      const koMs=sgtStringToUtcMs(tm.kickoffSGT);if(!koMs)return;
+      const sgt=utcMsToTZ(koMs,userTz);
+      allMatches.push({type:'test',id:tm.id,nA:tm.nA,fA:tm.fA,nB:tm.nB,fB:tm.fB,v:tm.venue,sgt,ko:koMs});
+    });
+  }
+  allMatches.sort((a,b)=>a.ko-b.ko);
+
+  const GC2=GC;
+  const rl={R32:'R32',R16:'R16',QF:'QF',SF:'SF','3RD':'3rd',FIN:'Final',test:'Test'};
+  const rc={R32:'#f59e0b',R16:'#f97316',QF:'#ef4444',SF:'#a855f7','3RD':'#6366f1',FIN:'#fbbf24',test:'#a855f7'};
+
+  let resHtml='<div style="display:flex;flex-direction:column;gap:6px">';
+  allMatches.forEach(m=>{
+    const key=m.type==='group'?m.idx:m.id;
+    const or=officialResults[key]||{};
+    const sA=or.scoreA!=null?or.scoreA:'';
+    const sB=or.scoreB!=null?or.scoreB:'';
+    const isDraw=sA!==''&&sB!==''&&Number(sA)===Number(sB);
+    const pW=or.winner;
+    let label='';
+    if(m.type==='group'){
+      label=`<span style="font-size:11px;color:${GC2[GL.indexOf(m.gl)]};font-weight:700;margin-right:4px">Grp ${m.gl}</span>${m.fA} ${m.nA} vs ${m.fB} ${m.nB}`;
+    } else if(m.type==='test'){
+      label=`<span class="test-badge" style="margin-right:4px">TEST</span>${m.fA} ${m.nA} vs ${m.fB} ${m.nB}`;
+    } else {
+      const{tA,tB}=resolveKO(m.id);
+      label=`<span style="font-size:11px;color:var(--ac2);font-weight:700;margin-right:4px">#${m.n}</span>${tA?tA.flag+' '+tA.name:m.lA} vs ${tB?tB.flag+' '+tB.name:m.lB}`;
+    }
+    let drawPicker='';
+    if(isDraw&&m.type!=='group'){
+      const nA=m.nA||(resolveKO(m.id).tA?.name||m.lA),fA=m.fA||(resolveKO(m.id).tA?.flag||'');
+      const nB=m.nB||(resolveKO(m.id).tB?.name||m.lB),fB=m.fB||(resolveKO(m.id).tB?.flag||'');
+      drawPicker=`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">
+        <button class="et-btn${pW?.name===nA&&or.via==='aet'?' chosen':''}" onclick="adminPickWinner('${key}','a','aet')">${fA} AET</button>
+        <button class="et-btn${pW?.name===nA&&or.via==='pens'?' chosen':''}" onclick="adminPickWinner('${key}','a','pens')">${fA} Pen</button>
+        <button class="et-btn${pW?.name===nB&&or.via==='aet'?' chosen':''}" onclick="adminPickWinner('${key}','b','aet')">AET ${fB}</button>
+        <button class="et-btn${pW?.name===nB&&or.via==='pens'?' chosen':''}" onclick="adminPickWinner('${key}','b','pens')">Pen ${fB}</button>
+      </div>`;
+    }
+    const lockoutVal=lockoutOverrides[key]!==undefined?lockoutOverrides[key]:config.lockoutMins;
+    resHtml+=`<div style="background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:8px 12px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:12px;flex:1">${label}</span>
+        <span style="font-size:11px;color:var(--mu)">${m.sgt.display}</span>
+        <div style="display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--b);border-radius:6px;padding:2px 8px">
+          <input style="width:28px;background:transparent;border:none;color:var(--ac2);font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;outline:none" type="number" min="0" max="99" id="ar-${key}-a" value="${sA}" placeholder="–" oninput="adminUpdateResult('${key}','${m.type}')">
+          <span style="color:var(--mu);font-family:'Barlow Condensed',sans-serif;font-size:16px">:</span>
+          <input style="width:28px;background:transparent;border:none;color:var(--ac2);font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;outline:none" type="number" min="0" max="99" id="ar-${key}-b" value="${sB}" placeholder="–" oninput="adminUpdateResult('${key}','${m.type}')">
+        </div>
+        <button class="btn-danger" style="font-size:10px;padding:4px 8px" onclick="adminClearResult('${key}')">Clear</button>
+        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--mu)">
+          <span>Lock:</span>
+          <input style="width:42px;background:var(--s2);border:1px solid var(--b);border-radius:5px;padding:3px 5px;color:var(--tx);font-size:11px;outline:none;text-align:center" type="number" id="lo-${key}" value="${lockoutVal}" step="1" onchange="adminUpdateLockout('${key}')">
+          <span>min</span>
+        </div>
+      </div>${drawPicker}
+    </div>`;
+  });
+  const adminResEl=document.getElementById('admin-results-list');
+  if(adminResEl)adminResEl.innerHTML=resHtml+'</div>';
+
+  renderAdminPredictions();
+}
+
+async function adminDeleteUser(ukey){
+  if(!confirm('Remove '+( users[ukey]?.displayName||ukey)+'?'))return;
+  delete users[ukey];
+  try{await api('deleteUser',{name:ukey});}catch(e){}
+  renderAdmin();
+}
+
+async function adminUpdateResult(key,type){
+  if(!currentUser?.isAdmin){showToast('Only admin can enter results');return;}
+  const eA=document.getElementById('ar-'+key+'-a')||document.getElementById('rsc-'+key+'-a');
+  const eB=document.getElementById('ar-'+key+'-b')||document.getElementById('rsc-'+key+'-b');
+  if(!eA||!eB)return;
+  const vA=eA.value.trim(),vB=eB.value.trim();
+  if(vA===''||vB==='')return;
+  const sA=parseInt(vA),sB=parseInt(vB);
+  if(isNaN(sA)||isNaN(sB))return;
+  const prev=officialResults[key]||{};
+  let winner=null,via=prev.via||null;
+  if(type==='group'){
+    const gfRow=GF[key];if(!gfRow)return;
+    const g=GROUPS[gfRow[0]];if(!g)return;
+    if(sA>sB)winner={name:g.t[gfRow[1]],flag:g.f[gfRow[1]]};
+    else if(sB>sA)winner={name:g.t[gfRow[2]],flag:g.f[gfRow[2]]};
+  } else if(type==='test'){
+    const tm=testMatches.find(t=>t.id===key);
+    if(tm){if(sA>sB)winner={name:tm.nA,flag:tm.fA};else if(sB>sA)winner={name:tm.nB,flag:tm.fB};else winner=prev.winner||null;}
+    via=null;
+  } else {
+    if(sA!==sB){const{tA,tB}=resolveKO(key);winner=sA>sB?tA:tB;via=null;}
+    else{winner=prev.winner||null;}
+  }
+  const resObj={scoreA:sA,scoreB:sB,winner,via};
+  officialResults[key]=resObj;
+  try{await api('saveResult',{matchKey:key,...resObj,winner:resObj.winner||null});}catch(e){console.warn(e);}
+  renderAdmin();renderLeaderboard();renderGroups();renderKnockout();
+  if(document.getElementById('view-results').classList.contains('active'))renderResults();
+}
+
+async function adminPickWinner(key,side,via){
+  const or=officialResults[key];if(!or)return;
+  let tA=null,tB=null;
+  const m=KO_MAP[key];
+  if(m){const k=resolveKO(key);tA=k.tA;tB=k.tB;}
+  else{const tm=testMatches.find(t=>t.id===key);if(tm){tA={name:tm.nA,flag:tm.fA};tB={name:tm.nB,flag:tm.fB};}}
+  const team=side==='a'?tA:tB;if(!team)return;
+  const updatedRes={...or,winner:team,via};
+  officialResults[key]=updatedRes;
+  try{await api('saveResult',{matchKey:key,...updatedRes,winner:team});}catch(e){console.warn(e);}
+  renderAdmin();renderLeaderboard();renderGroups();renderKnockout();
+  if(document.getElementById('view-results').classList.contains('active'))renderResults();
+}
+
+async function adminClearResult(key){
+  delete officialResults[key];
+  try{await api('saveResult',{matchKey:key,scoreA:null,scoreB:null,winner:null,via:null});}catch(e){}
+  renderAdmin();renderLeaderboard();renderGroups();renderKnockout();
+  if(document.getElementById('view-results').classList.contains('active'))renderResults();
+}
+
+async function adminUpdateLockout(key){
+  const el=document.getElementById('lo-'+key);if(!el)return;
+  const offsetVal=parseFloat(el.value);
+  lockoutOverrides[key]=offsetVal;
+  try{await api('saveLockout',{matchKey:key,offsetMins:offsetVal});}catch(e){}
+  showToast('Lockout updated ✓');
+}
+
+function renderAdminPredictions(){
+  const allMatchKeys=[];
+  GF.forEach((_,idx)=>allMatchKeys.push({key:idx,label:`GF ${idx}`}));
+  KO.forEach(m=>{const{tA,tB}=resolveKO(m.id);allMatchKeys.push({key:m.id,label:`#${m.n} ${tA?tA.name:m.lA} vs ${tB?tB.name:m.lB}` });});
+  if(testModeOn) testMatches.forEach(tm=>allMatchKeys.push({key:tm.id,label:`TEST: ${tm.nA} vs ${tm.nB}`}));
+  const playerKeys=Object.keys(users);
+  const el=document.getElementById('admin-predictions');if(!el)return;
+  if(!playerKeys.length){el.innerHTML='<div style="color:var(--mu);font-size:13px">No players</div>';return;}
+  let html=`<div style="overflow-x:auto"><table class="admin-predictions-table apt">
+    <thead><tr><th>Match</th>${playerKeys.map(uk=>`<th>${users[uk]?.displayName||uk}</th>`).join('')}</tr></thead><tbody>`;
+  allMatchKeys.forEach(({key,label})=>{
+    const or=officialResults[key];
+    html+=`<tr><td style="font-size:11px;white-space:nowrap">${label}</td>`;
+    playerKeys.forEach(uk=>{
+      const pred=(allPredictions[uk]||{})[key];
+      if(!pred||pred.scoreA===null||pred.scoreA===undefined){html+=`<td style="color:var(--mu);font-size:11px">—</td>`;}
+      else{
+        const pts=calcPoints(pred,or);
+        const ptsBadge=pts===null?'':`<span style="font-size:9px;font-weight:700;color:${pts===3?'#fbbf24':pts===1?'var(--win)':'var(--ac3)'}">${pts===3?'⭐':pts===1?'✓':'✗'}</span>`;
+        const via=pred.via?' ('+pred.via.toUpperCase()+')':'';
+        const ts=pred.ts?new Date(pred.ts).toLocaleString('en-SG',{timeZone:'Asia/Singapore',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+        html+=`<td style="font-size:11px;white-space:nowrap">${pred.scoreA}:${pred.scoreB}${via}${ptsBadge}<br><span class="ts-label">${ts}</span></td>`;
+      }
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  el.innerHTML=html;
+}
+
+async function saveConfig(){
+  config.maxPlayers=parseInt(document.getElementById('cfg-max-players')?.value||config.maxPlayers);
+  config.lockoutMins=parseFloat(document.getElementById('cfg-lockout')?.value||config.lockoutMins);
+  await api('saveConfig',config);
+  showToast('Settings saved ✓');
+}
+
+function exportCSV(){
+  const playerKeys=Object.keys(users);
+  let csv='Match,Date (SGT),Team A,Team B,Official Score';
+  playerKeys.forEach(uk=>{csv+=','+( users[uk]?.displayName||uk)+' Pred,'+(users[uk]?.displayName||uk)+' Pts,'+(users[uk]?.displayName||uk)+' Timestamp';});
+  csv+='
+';
+  const allMatches=[];
+  GF.forEach(([gl,ai,bi],idx)=>{
+    const g=GROUPS[gl];if(!g)return;
+    const sgt=utcMsToTZ(GF_KO[idx],userTz);
+    allMatches.push({key:idx,label:'Grp '+gl+': '+g.t[ai]+' vs '+g.t[bi],date:sgt.date+' '+sgt.display,nA:g.t[ai],nB:g.t[bi],ko:GF_KO[idx]});
+  });
+  KO.forEach(m=>{
+    const sgt=utcMsToTZ(KO_KO[m.id],userTz);
+    const{tA,tB}=resolveKO(m.id);
+    allMatches.push({key:m.id,label:'#'+m.n+' '+(tA?tA.name:m.lA)+' vs '+(tB?tB.name:m.lB),date:sgt.date+' '+sgt.display,nA:tA?tA.name:m.lA,nB:tB?tB.name:m.lB,ko:KO_KO[m.id]});
+  });
+  if(testModeOn) testMatches.forEach(tm=>{
+    if(!tm.kickoffSGT)return;
+    const koMs=sgtStringToUtcMs(tm.kickoffSGT);const sgt=utcMsToTZ(koMs,userTz);
+    allMatches.push({key:tm.id,label:'TEST: '+tm.nA+' vs '+tm.nB,date:sgt.date+' '+sgt.display,nA:tm.nA,nB:tm.nB,ko:koMs});
+  });
+  allMatches.sort((a,b)=>a.ko-b.ko);
+  allMatches.forEach(({key,label,date,nA,nB})=>{
+    const or=officialResults[key];
+    const offScore=or?.scoreA!=null?or.scoreA+'-'+or.scoreB:'';
+    let row='"'+label+'","'+date+'","'+nA+'","'+nB+'","'+offScore+'"';
+    playerKeys.forEach(uk=>{
+      const pred=(allPredictions[uk]||{})[key];
+      if(!pred||pred.scoreA===null||pred.scoreA===undefined){row+=',"","","";';}
+      else{
+        const pts=calcPoints(pred,or);
+        const via=pred.via?' ('+pred.via.toUpperCase()+')':'';
+        const ts=pred.ts?new Date(pred.ts).toLocaleString('en-SG',{timeZone:'Asia/Singapore'}):'';
+        row+=',"'+pred.scoreA+'-'+pred.scoreB+via+'","'+(pts!=null?pts:'')+'","'+ts+'"';
+      }
+    });
+    csv+=row+'
+';
+  });
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='WC2026_Predictions_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
 
 // ── Live score sync ──────────────────────────────────────────
 async function manualSync(){
