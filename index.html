@@ -1470,31 +1470,68 @@ function toggleTestMode(on){
 
 function renderTestMatchCards(){
   const container=document.getElementById('test-match-cards');
-  if(!container)return;
+  if(!container) return;
   const now=new Date();
   now.setMinutes(now.getMinutes()+30);
   const pad=n=>String(n).padStart(2,'0');
-  // Get SGT time for default
   const sgtMs=now.getTime()+((8*60+now.getTimezoneOffset())*60000);
   const sgtNow=new Date(sgtMs);
   const defaultTime=sgtNow.getFullYear()+'-'+pad(sgtNow.getMonth()+1)+'-'+pad(sgtNow.getDate())+' '+pad(sgtNow.getHours())+':'+pad(sgtNow.getMinutes());
-  container.innerHTML=testMatches.map((tm,i)=>`
-    <div class="test-match-card">
-      <div class="test-match-header">🧪 Test Match ${i+1} <span class="test-badge">ID: ${tm.id}</span></div>
-      <div class="tm-row">
-        <div><div class="test-input-label">Team A Name</div><input class="test-input" id="tm-${i}-nA" value="${tm.nA}" placeholder="Team Alpha"></div>
-        <div><div class="test-input-label">Team A Flag/Icon</div><input class="test-input" id="tm-${i}-fA" value="${tm.fA}" placeholder="🔴 or text"></div>
-      </div>
-      <div class="tm-row">
-        <div><div class="test-input-label">Team B Name</div><input class="test-input" id="tm-${i}-nB" value="${tm.nB}" placeholder="Team Beta"></div>
-        <div><div class="test-input-label">Team B Flag/Icon</div><input class="test-input" id="tm-${i}-fB" value="${tm.fB}" placeholder="🔵 or text"></div>
-      </div>
-      <div class="tm-row3">
-        <div><div class="test-input-label">Kickoff (SGT) YYYY-MM-DD HH:MM</div><input class="test-input" id="tm-${i}-time" value="${tm.kickoffSGT||defaultTime}" placeholder="${defaultTime}"></div>
-        <div><div class="test-input-label">Lockout (mins before KO)</div><input class="test-input" id="tm-${i}-lock" type="number" value="${tm.lockoutMins}" step="1"></div>
-        <div><div class="test-input-label">Venue</div><input class="test-input" id="tm-${i}-venue" value="${tm.venue}" placeholder="Test Stadium"></div>
-      </div>
-    </div>`).join('');
+
+  container.innerHTML='';
+  testMatches.forEach(function(tm,i){
+    // Build card safely using DOM methods to avoid HTML injection issues
+    const card=document.createElement('div');
+    card.className='test-match-card';
+
+    // Header
+    const hdr=document.createElement('div');
+    hdr.className='test-match-header';
+    hdr.textContent='🧪 Test Match '+(i+1)+' ';
+    const badge=document.createElement('span');
+    badge.className='test-badge';
+    badge.textContent='ID: '+tm.id;
+    hdr.appendChild(badge);
+    card.appendChild(hdr);
+
+    // Helper to create a labelled input row
+    function makeField(labelText, inputId, value, placeholder, type){
+      const wrap=document.createElement('div');
+      const lbl=document.createElement('div');
+      lbl.className='test-input-label';
+      lbl.textContent=labelText;
+      const inp=document.createElement('input');
+      inp.className='test-input';
+      inp.id=inputId;
+      inp.value=value||'';
+      inp.placeholder=placeholder||'';
+      if(type) inp.type=type;
+      wrap.appendChild(lbl);
+      wrap.appendChild(inp);
+      return wrap;
+    }
+
+    // Row 1: Team A name + flag
+    const row1=document.createElement('div'); row1.className='tm-row';
+    row1.appendChild(makeField('Team A Name','tm-'+i+'-nA',tm.nA,'Team Alpha'));
+    row1.appendChild(makeField('Team A Flag/Emoji','tm-'+i+'-fA',tm.fA,'🔴 or EN'));
+    card.appendChild(row1);
+
+    // Row 2: Team B name + flag
+    const row2=document.createElement('div'); row2.className='tm-row';
+    row2.appendChild(makeField('Team B Name','tm-'+i+'-nB',tm.nB,'Team Beta'));
+    row2.appendChild(makeField('Team B Flag/Emoji','tm-'+i+'-fB',tm.fB,'🔵 or US'));
+    card.appendChild(row2);
+
+    // Row 3: Time + lockout + venue
+    const row3=document.createElement('div'); row3.className='tm-row3';
+    row3.appendChild(makeField('Kickoff SGT (YYYY-MM-DD HH:MM)','tm-'+i+'-time',tm.kickoffSGT||defaultTime,defaultTime));
+    row3.appendChild(makeField('Lockout (mins before KO)','tm-'+i+'-lock',tm.lockoutMins,'1','number'));
+    row3.appendChild(makeField('Venue','tm-'+i+'-venue',tm.venue,'Test Stadium'));
+    card.appendChild(row3);
+
+    container.appendChild(card);
+  });
 }
 
 function saveTestMatches(){
