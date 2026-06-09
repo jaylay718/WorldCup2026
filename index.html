@@ -1458,19 +1458,31 @@ function renderKnockout(){
 // ── TEST MODE ADMIN FUNCTIONS ────────────────────────────────
 function toggleTestMode(on){
   testModeOn=on;
+  try{localStorage.setItem('wc26_testmode',on?'1':'0');}catch(e){}
   const editor=document.getElementById('test-matches-editor');
   const section=document.getElementById('test-mode-section');
-  if(editor)editor.style.display=on?'block':'none';
   if(section)section.classList.toggle('test-mode-on',on);
-  if(on)renderTestMatchCards();
-  try{localStorage.setItem('wc26_testmode',on?'1':'0');}catch(e){}
+  if(editor){
+    if(on){
+      editor.style.display='block';
+      editor.style.visibility='visible';
+      editor.style.opacity='1';
+      renderTestMatchCards();
+    } else {
+      editor.style.display='none';
+    }
+  }
   renderPredictions();
-  if(document.getElementById('view-results').classList.contains('active'))renderResults();
+  if(document.getElementById('view-results')&&document.getElementById('view-results').classList.contains('active'))renderResults();
 }
 
 function renderTestMatchCards(){
   const container=document.getElementById('test-match-cards');
-  if(!container) return;
+  if(!container){
+    console.warn('test-match-cards container not found, retrying...');
+    setTimeout(renderTestMatchCards, 200);
+    return;
+  }
   const now=new Date();
   now.setMinutes(now.getMinutes()+30);
   const pad=n=>String(n).padStart(2,'0');
@@ -1535,42 +1547,48 @@ function renderTestMatchCards(){
 }
 
 function saveTestMatches(){
-  testMatches=testMatches.map((tm,i)=>({
-    id:tm.id,
-    nA:(document.getElementById('tm-'+i+'-nA')?.value||tm.nA).trim(),
-    fA:(document.getElementById('tm-'+i+'-fA')?.value||tm.fA).trim(),
-    nB:(document.getElementById('tm-'+i+'-nB')?.value||tm.nB).trim(),
-    fB:(document.getElementById('tm-'+i+'-fB')?.value||tm.fB).trim(),
-    kickoffSGT:(document.getElementById('tm-'+i+'-time')?.value||tm.kickoffSGT).trim(),
-    lockoutMins:parseFloat(document.getElementById('tm-'+i+'-lock')?.value||tm.lockoutMins)||1,
-    venue:(document.getElementById('tm-'+i+'-venue')?.value||tm.venue).trim(),
-  }));
-  testMatches.forEach(tm=>{lockoutOverrides[tm.id]=tm.lockoutMins;});
+  testMatches=testMatches.map(function(tm,i){
+    const nA=(document.getElementById('tm-'+i+'-nA')||{}).value||tm.nA;
+    const fA=(document.getElementById('tm-'+i+'-fA')||{}).value||tm.fA;
+    const nB=(document.getElementById('tm-'+i+'-nB')||{}).value||tm.nB;
+    const fB=(document.getElementById('tm-'+i+'-fB')||{}).value||tm.fB;
+    const time=(document.getElementById('tm-'+i+'-time')||{}).value||tm.kickoffSGT;
+    const lock=(document.getElementById('tm-'+i+'-lock')||{}).value||tm.lockoutMins;
+    const venue=(document.getElementById('tm-'+i+'-venue')||{}).value||tm.venue;
+    return {id:tm.id,nA:nA.trim(),fA:fA.trim(),nB:nB.trim(),fB:fB.trim(),
+      kickoffSGT:time.trim(),lockoutMins:parseFloat(lock)||1,venue:venue.trim()};
+  });
+  testMatches.forEach(function(tm){lockoutOverrides[tm.id]=tm.lockoutMins;});
   try{localStorage.setItem('wc26_testmatches',JSON.stringify(testMatches));}catch(e){}
-  showToast('Test matches saved ✓');
+  showToast('✓ Test matches saved! Check My Predictions tab.');
   renderPredictions();
-  if(document.getElementById('view-results').classList.contains('active'))renderResults();
+  renderAdmin();
+  if(document.getElementById('view-results')&&document.getElementById('view-results').classList.contains('active'))renderResults();
 }
 
 function loadTestModeState(){
   try{
-    const on=localStorage.getItem('wc26_testmode');
-    if(on==='1'){
-      testModeOn=true;
-      const toggle=document.getElementById('test-mode-toggle');
-      if(toggle)toggle.checked=true;
-      const editor=document.getElementById('test-matches-editor');
-      if(editor)editor.style.display='block';
-      const section=document.getElementById('test-mode-section');
-      if(section)section.classList.add('test-mode-on');
-    }
+    // Load saved test matches first
     const saved=localStorage.getItem('wc26_testmatches');
     if(saved){
       const parsed=JSON.parse(saved);
       testMatches=testMatches.map((tm,i)=>parsed[i]?{...tm,...parsed[i]}:tm);
       testMatches.forEach(tm=>{lockoutOverrides[tm.id]=tm.lockoutMins;});
     }
-  }catch(e){}
+    // Then restore toggle state
+    const on=localStorage.getItem('wc26_testmode');
+    if(on==='1'){
+      testModeOn=true;
+      const toggle=document.getElementById('test-mode-toggle');
+      if(toggle)toggle.checked=true;
+      const editor=document.getElementById('test-matches-editor');
+      if(editor){editor.style.display='block';editor.style.visibility='visible';}
+      const section=document.getElementById('test-mode-section');
+      if(section)section.classList.add('test-mode-on');
+      // Render cards after a short delay to ensure DOM is ready
+      setTimeout(renderTestMatchCards, 100);
+    }
+  }catch(e){console.warn('loadTestModeState error:',e);}
 }
 
 // ── renderAdmin ───────────────────────────────────────────────
