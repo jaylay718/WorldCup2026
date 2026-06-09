@@ -486,11 +486,65 @@ main{position:relative;z-index:1}
       </label>
     </div>
     <div id="test-matches-editor" style="display:none">
-      <div id="test-match-cards"></div>
-      <div style="font-size:11px;color:var(--mu);padding:6px 0">
-        ⚠️ Enter kickoff time in <strong>SGT (UTC+8)</strong> format: <code style="background:var(--bg);padding:1px 5px;border-radius:3px">YYYY-MM-DD HH:MM</code> e.g. <code style="background:var(--bg);padding:1px 5px;border-radius:3px">2026-06-05 20:00</code>
+
+      <!-- TEST MATCH 1 -->
+      <div class="test-match-card">
+        <div class="test-match-header">🧪 Test Match 1 <span class="test-badge">ID: test_0</span></div>
+        <div class="tm-row">
+          <div><div class="test-input-label">Team A Name</div><input class="test-input" id="tm-0-nA" placeholder="e.g. Team Alpha" value="Team Alpha"></div>
+          <div><div class="test-input-label">Team A Flag / Short Code</div><input class="test-input" id="tm-0-fA" placeholder="e.g. 🔴 or AA" value="🔴"></div>
+        </div>
+        <div class="tm-row">
+          <div><div class="test-input-label">Team B Name</div><input class="test-input" id="tm-0-nB" placeholder="e.g. Team Beta" value="Team Beta"></div>
+          <div><div class="test-input-label">Team B Flag / Short Code</div><input class="test-input" id="tm-0-fB" placeholder="e.g. 🔵 or BB" value="🔵"></div>
+        </div>
+        <div class="tm-row3">
+          <div><div class="test-input-label">Kickoff — SGT (YYYY-MM-DD HH:MM)</div><input class="test-input" id="tm-0-time" placeholder="2026-06-05 20:00"></div>
+          <div><div class="test-input-label">Lockout (mins before KO)</div><input class="test-input" id="tm-0-lock" type="number" value="1" step="1"></div>
+          <div><div class="test-input-label">Venue</div><input class="test-input" id="tm-0-venue" placeholder="Test Stadium" value="Test Stadium"></div>
+        </div>
       </div>
-      <button onclick="saveTestMatches()" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;padding:8px 20px;border-radius:8px;border:none;background:#a855f7;color:#fff;cursor:pointer;margin-top:6px">💾 Save Test Matches</button>
+
+      <!-- TEST MATCH 2 -->
+      <div class="test-match-card">
+        <div class="test-match-header">🧪 Test Match 2 <span class="test-badge">ID: test_1</span></div>
+        <div class="tm-row">
+          <div><div class="test-input-label">Team A Name</div><input class="test-input" id="tm-1-nA" placeholder="e.g. Team Gamma" value="Team Gamma"></div>
+          <div><div class="test-input-label">Team A Flag / Short Code</div><input class="test-input" id="tm-1-fA" placeholder="e.g. 🟢 or CC" value="🟢"></div>
+        </div>
+        <div class="tm-row">
+          <div><div class="test-input-label">Team B Name</div><input class="test-input" id="tm-1-nB" placeholder="e.g. Team Delta" value="Team Delta"></div>
+          <div><div class="test-input-label">Team B Flag / Short Code</div><input class="test-input" id="tm-1-fB" placeholder="e.g. 🟡 or DD" value="🟡"></div>
+        </div>
+        <div class="tm-row3">
+          <div><div class="test-input-label">Kickoff — SGT (YYYY-MM-DD HH:MM)</div><input class="test-input" id="tm-1-time" placeholder="2026-06-05 21:00"></div>
+          <div><div class="test-input-label">Lockout (mins before KO)</div><input class="test-input" id="tm-1-lock" type="number" value="1" step="1"></div>
+          <div><div class="test-input-label">Venue</div><input class="test-input" id="tm-1-venue" placeholder="Test Stadium" value="Test Stadium"></div>
+        </div>
+      </div>
+
+      <!-- TEST MATCH 3 -->
+      <div class="test-match-card">
+        <div class="test-match-header">🧪 Test Match 3 <span class="test-badge">ID: test_2</span></div>
+        <div class="tm-row">
+          <div><div class="test-input-label">Team A Name</div><input class="test-input" id="tm-2-nA" placeholder="e.g. Team Omega" value="Team Omega"></div>
+          <div><div class="test-input-label">Team A Flag / Short Code</div><input class="test-input" id="tm-2-fA" placeholder="e.g. ⚪ or EE" value="⚪"></div>
+        </div>
+        <div class="tm-row">
+          <div><div class="test-input-label">Team B Name</div><input class="test-input" id="tm-2-nB" placeholder="e.g. Team Sigma" value="Team Sigma"></div>
+          <div><div class="test-input-label">Team B Flag / Short Code</div><input class="test-input" id="tm-2-fB" placeholder="e.g. ⚫ or FF" value="⚫"></div>
+        </div>
+        <div class="tm-row3">
+          <div><div class="test-input-label">Kickoff — SGT (YYYY-MM-DD HH:MM)</div><input class="test-input" id="tm-2-time" placeholder="2026-06-05 22:00"></div>
+          <div><div class="test-input-label">Lockout (mins before KO)</div><input class="test-input" id="tm-2-lock" type="number" value="1" step="1"></div>
+          <div><div class="test-input-label">Venue</div><input class="test-input" id="tm-2-venue" placeholder="Test Stadium" value="Test Stadium"></div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:var(--mu);padding:8px 0 4px">
+        ⚠️ Kickoff time must be in <strong>SGT (UTC+8)</strong> — e.g. <code style="background:var(--bg);padding:1px 5px;border-radius:3px">2026-06-11 21:00</code>
+      </div>
+      <button onclick="saveTestMatches()" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;padding:10px 24px;border-radius:8px;border:none;background:#a855f7;color:#fff;cursor:pointer;margin-top:4px;transition:opacity .2s" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">💾 Save Test Matches</button>
     </div>
   </div>
   <div class="admin-section">
@@ -626,6 +680,26 @@ let officialResults={}; // gfIdx or koId -> {scoreA,scoreB,winner,via}
 let allPredictions={}; // userName -> {gfIdx|koId -> {scoreA,scoreB,winner,via,ts}}
 let lockoutOverrides={}; // gfIdx|koId -> offsetMins (override per match)
 let fixFilter='all';
+
+// ── TEST MODE STATE ───────────────────────────────────────────
+let testModeOn=false;
+let testMatches=[
+  {id:'test_0',nA:'Team Alpha',fA:'🔴',nB:'Team Beta', fB:'🔵',kickoffSGT:'',lockoutMins:1,venue:'Test Stadium'},
+  {id:'test_1',nA:'Team Gamma',fA:'🟢',nB:'Team Delta',fB:'🟡',kickoffSGT:'',lockoutMins:1,venue:'Test Stadium'},
+  {id:'test_2',nA:'Team Omega',fA:'⚪',nB:'Team Sigma',fB:'⚫',kickoffSGT:'',lockoutMins:1,venue:'Test Stadium'},
+];
+
+// Parse "YYYY-MM-DD HH:MM" SGT string → UTC milliseconds
+function sgtStringToUtcMs(sgtStr){
+  if(!sgtStr||!sgtStr.trim()) return 0;
+  const parts=sgtStr.trim().split(' ');
+  if(parts.length<2) return 0;
+  const dp=parts[0].split('-').map(Number);
+  const tp=parts[1].split(':').map(Number);
+  if(dp.length<3||tp.length<2) return 0;
+  // SGT = UTC+8, so subtract 8 hours to get UTC
+  return Date.UTC(dp[0],dp[1]-1,dp[2],tp[0]-8,tp[1]);
+}
 
 // ═══════════════════════════════════════════════════════
 // API — Google Apps Script backend
@@ -1462,89 +1536,32 @@ function toggleTestMode(on){
   const editor=document.getElementById('test-matches-editor');
   const section=document.getElementById('test-mode-section');
   if(section)section.classList.toggle('test-mode-on',on);
-  if(editor){
-    if(on){
-      editor.style.display='block';
-      editor.style.visibility='visible';
-      editor.style.opacity='1';
-      renderTestMatchCards();
-    } else {
-      editor.style.display='none';
-    }
-  }
+  if(editor)editor.style.display=on?'block':'none';
+  // Pre-fill inputs from saved state if turning on
+  if(on) populateTestInputs();
   renderPredictions();
   if(document.getElementById('view-results')&&document.getElementById('view-results').classList.contains('active'))renderResults();
 }
 
-function renderTestMatchCards(){
-  const container=document.getElementById('test-match-cards');
-  if(!container){
-    console.warn('test-match-cards container not found, retrying...');
-    setTimeout(renderTestMatchCards, 200);
-    return;
-  }
-  const now=new Date();
-  now.setMinutes(now.getMinutes()+30);
-  const pad=n=>String(n).padStart(2,'0');
-  const sgtMs=now.getTime()+((8*60+now.getTimezoneOffset())*60000);
-  const sgtNow=new Date(sgtMs);
-  const defaultTime=sgtNow.getFullYear()+'-'+pad(sgtNow.getMonth()+1)+'-'+pad(sgtNow.getDate())+' '+pad(sgtNow.getHours())+':'+pad(sgtNow.getMinutes());
-
-  container.innerHTML='';
+// Fill the static input fields from the testMatches state array
+function populateTestInputs(){
   testMatches.forEach(function(tm,i){
-    // Build card safely using DOM methods to avoid HTML injection issues
-    const card=document.createElement('div');
-    card.className='test-match-card';
-
-    // Header
-    const hdr=document.createElement('div');
-    hdr.className='test-match-header';
-    hdr.textContent='🧪 Test Match '+(i+1)+' ';
-    const badge=document.createElement('span');
-    badge.className='test-badge';
-    badge.textContent='ID: '+tm.id;
-    hdr.appendChild(badge);
-    card.appendChild(hdr);
-
-    // Helper to create a labelled input row
-    function makeField(labelText, inputId, value, placeholder, type){
-      const wrap=document.createElement('div');
-      const lbl=document.createElement('div');
-      lbl.className='test-input-label';
-      lbl.textContent=labelText;
-      const inp=document.createElement('input');
-      inp.className='test-input';
-      inp.id=inputId;
-      inp.value=value||'';
-      inp.placeholder=placeholder||'';
-      if(type) inp.type=type;
-      wrap.appendChild(lbl);
-      wrap.appendChild(inp);
-      return wrap;
-    }
-
-    // Row 1: Team A name + flag
-    const row1=document.createElement('div'); row1.className='tm-row';
-    row1.appendChild(makeField('Team A Name','tm-'+i+'-nA',tm.nA,'Team Alpha'));
-    row1.appendChild(makeField('Team A Flag/Emoji','tm-'+i+'-fA',tm.fA,'🔴 or EN'));
-    card.appendChild(row1);
-
-    // Row 2: Team B name + flag
-    const row2=document.createElement('div'); row2.className='tm-row';
-    row2.appendChild(makeField('Team B Name','tm-'+i+'-nB',tm.nB,'Team Beta'));
-    row2.appendChild(makeField('Team B Flag/Emoji','tm-'+i+'-fB',tm.fB,'🔵 or US'));
-    card.appendChild(row2);
-
-    // Row 3: Time + lockout + venue
-    const row3=document.createElement('div'); row3.className='tm-row3';
-    row3.appendChild(makeField('Kickoff SGT (YYYY-MM-DD HH:MM)','tm-'+i+'-time',tm.kickoffSGT||defaultTime,defaultTime));
-    row3.appendChild(makeField('Lockout (mins before KO)','tm-'+i+'-lock',tm.lockoutMins,'1','number'));
-    row3.appendChild(makeField('Venue','tm-'+i+'-venue',tm.venue,'Test Stadium'));
-    card.appendChild(row3);
-
-    container.appendChild(card);
+    const set=function(id,val){const el=document.getElementById(id);if(el&&val)el.value=val;};
+    set('tm-'+i+'-nA',tm.nA);
+    set('tm-'+i+'-fA',tm.fA);
+    set('tm-'+i+'-nB',tm.nB);
+    set('tm-'+i+'-fB',tm.fB);
+    set('tm-'+i+'-time',tm.kickoffSGT);
+    set('tm-'+i+'-lock',tm.lockoutMins);
+    set('tm-'+i+'-venue',tm.venue);
   });
 }
+
+function renderTestMatchCards(){
+  // Cards are static HTML — just populate inputs from saved state
+  populateTestInputs();
+}
+
 
 function saveTestMatches(){
   testMatches=testMatches.map(function(tm,i){
@@ -1586,7 +1603,7 @@ function loadTestModeState(){
       const section=document.getElementById('test-mode-section');
       if(section)section.classList.add('test-mode-on');
       // Render cards after a short delay to ensure DOM is ready
-      setTimeout(renderTestMatchCards, 100);
+      setTimeout(populateTestInputs, 100);
     }
   }catch(e){console.warn('loadTestModeState error:',e);}
 }
