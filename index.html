@@ -1942,6 +1942,17 @@ function renderResults(){
     allMatches.push({type:'ko',id:m.id,r:m.r,n:m.n,ko:KO_KO[m.id],sgt,v:m.v,
       nA:tA?tA.name:m.lA,fA:tA?tA.flag:'',nB:tB?tB.name:m.lB,fB:tB?tB.flag:''});
   });
+  // Inject test matches when test mode ON
+  if(testModeOn){
+    testMatches.forEach(function(tm){
+      if(!tm.kickoffSGT||!tm.kickoffSGT.trim())return;
+      const koMs=sgtStringToUtcMs(tm.kickoffSGT);
+      if(!koMs)return;
+      const sgt=utcMsToTZ(koMs,userTz);
+      allMatches.push({type:'test',id:tm.id,ko:koMs,sgt,v:tm.venue||'Test Stadium',
+        nA:tm.nA,fA:tm.fA,nB:tm.nB,fB:tm.fB});
+    });
+  }
   allMatches.sort((a,b)=>a.ko-b.ko);
 
   // Group by day
@@ -1986,9 +1997,11 @@ function renderResults(){
       const isDraw=sA!==''&&sB!==''&&Number(sA)===Number(sB);
       const pW=or?.winner;
       const hasResult=sA!==''&&sB!=='';
-      const stageLabel=m.type==='group'
+      const stageLabel=m.type==='test'
+        ?`<span style="color:#a855f7;font-size:10px;font-weight:700">🧪 TEST</span>`
+        :m.type==='group'
         ?`<span style="color:${GC2[GL.indexOf(m.gl)]};font-size:10px;font-weight:700">Grp ${m.gl}</span>`
-        :`<span style="color:var(--ac2);font-size:10px;font-weight:700">${roundLabels[m.r]||m.r}</span>`;
+        :`<span style="color:var(--ac2);font-size:10px;font-weight:700">${roundLabels[m.r]||m.r||'KO'}</span>`;
 
       let drawPicker='';
       if(isDraw&&m.type==='ko'&&isAdmin){
@@ -2070,6 +2083,14 @@ async function resultInputChanged(key,type){
     const g=GROUPS[gfRow[0]];if(!g)return;
     if(sA>sB)winner={name:g.t[gfRow[1]],flag:g.f[gfRow[1]]};
     else if(sB>sA)winner={name:g.t[gfRow[2]],flag:g.f[gfRow[2]]};
+  } else if(type==='test'){
+    const tm=testMatches.find(t=>t.id===String(key));
+    if(tm){
+      if(sA>sB)winner={name:tm.nA,flag:tm.fA};
+      else if(sB>sA)winner={name:tm.nB,flag:tm.fB};
+      else winner=prev.winner||null;
+    }
+    via=null;
   } else {
     if(sA!==sB){const{tA,tB}=resolveKO(key);winner=sA>sB?tA:tB;via=null;}
     else{winner=prev.winner||null;}
