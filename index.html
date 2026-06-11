@@ -982,9 +982,26 @@ function renderPredictions(){
     const{tA,tB}=m.isTP?{tA:getKOLoser2(m.src[0]),tB:getKOLoser2(m.src[1])}:resolveKO(m.id);
     all.push({type:'ko',id:m.id,r:m.r,n:m.n,lA:m.lA,lB:m.lB,v:m.v,sgt,ko:KO_KO[m.id],tA,tB,isTP:m.isTP||false});
   });
+  // Inject test matches when test mode is ON
+  if(testModeOn){
+    testMatches.forEach(function(tm){
+      if(!tm.kickoffSGT||!tm.kickoffSGT.trim()) return;
+      const koMs=sgtStringToUtcMs(tm.kickoffSGT);
+      if(!koMs) return;
+      const sgt=utcMsToTZ(koMs,userTz);
+      all.push({type:'test',id:tm.id,nA:tm.nA,fA:tm.fA,nB:tm.nB,fB:tm.fB,
+        v:tm.venue||'Test Stadium',sgt,ko:koMs,isTest:true});
+    });
+  }
   all.sort((a,b)=>a.ko-b.ko);
 
   const filtered=all.filter(m=>{
+    // Test matches only show on 'all' filter
+    if(m.isTest){
+      if(fixFilter!=='all') return false;
+      if(search&&!(m.nA+' '+m.nB).toLowerCase().includes(search)) return false;
+      return true;
+    }
     if(fixFilter==='group'&&m.type!=='group') return false;
     if(fixFilter==='ko'&&m.type!=='ko') return false;
     const key=m.type==='group'?m.idx:m.id;
@@ -992,7 +1009,6 @@ function renderPredictions(){
     const hasPred=pred&&pred.scoreA!==null&&pred.scoreA!==undefined;
     if(fixFilter==='done'&&!hasPred) return false;
     if(fixFilter==='open'){ if(hasPred||isLocked(key,m.ko)) return false; }
-    // 'all' — no gate, ALL matches always shown
     if(search){
       const nA=m.type==='group'?m.nA:(m.tA?m.tA.name:m.lA);
       const nB=m.type==='group'?m.nB:(m.tB?m.tB.name:m.lB);
